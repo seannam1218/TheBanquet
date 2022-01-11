@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!78 &1
+TagManager:
+  serializedVersion: 2
+  tags:
+  - Weapon
+  - Block
+  layers:
+  - Default
+  - TransparentFX
+  - Ignore Raycast
+  - 
+  - Water
+  - UI
+  - PlayerPassing
+  - Player
+  - Block
+  - Viewer
+  - PlatformOneWay
+  - Projectile
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  m_SortingLayers:
+  - name: Default
+    uniqueID: 0
+    locked: 0
+  - name: Sky
+    uniqueID: 3375682913
+    locked: 0
+  - name: Background
+    uniqueID: 2047100337
+    locked: 0
+  - name: Structure
+    uniqueID: 920393327
+    locked: 0
+  - name: Agent
+    uniqueID: 841840017
+    locked: 0
+  - name: Player
+    uniqueID: 1264861751
+    locked: 0
