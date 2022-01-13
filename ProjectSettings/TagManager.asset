@@ -6,6 +6,8 @@ TagManager:
   tags:
   - Weapon
   - Block
+  - Item
+  - Agent
   layers:
   - Default
   - TransparentFX
@@ -19,7 +21,7 @@ TagManager:
   - Viewer
   - PlatformOneWay
   - Projectile
-  - 
+  - Item
   - 
   - 
   - 
@@ -51,6 +53,9 @@ TagManager:
     locked: 0
   - name: Structure
     uniqueID: 920393327
+    locked: 0
+  - name: Item
+    uniqueID: 2351902065
     locked: 0
   - name: Agent
     uniqueID: 841840017

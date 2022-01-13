@@ -25,7 +25,18 @@ public static class Utils
                 newAngle = -newAngle;
             }
 
-
         return newAngle;
+    }
+
+    public static void SetChildrenColor(GameObject gameObject, Color c)
+    {
+        foreach (SpriteRenderer child in gameObject.transform.GetComponentsInChildren<SpriteRenderer>())
+        {
+            if (child.transform.name != gameObject.name) child.color = c;
+            foreach (SpriteRenderer grandChild in child.transform.GetComponentsInChildren<SpriteRenderer>())
+            {
+                if (grandChild.transform.name != gameObject.name) grandChild.color = c;
+            }
+        }
     }
 }

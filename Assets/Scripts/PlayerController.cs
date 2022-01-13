@@ -1,9 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Unity.Netcode;
+using Photon.Pun;
 
-public class PlayerController : NetworkBehaviour
+public class PlayerController : MonoBehaviour
 {
     public enum AnimState
     {
@@ -17,6 +17,7 @@ public class PlayerController : NetworkBehaviour
         ReverseRoll
     }
 
+    private PhotonView view;
 
     [SerializeField] GameObject camera;
     [SerializeField] GameObject groundCheck;
@@ -38,19 +39,19 @@ public class PlayerController : NetworkBehaviour
     [SerializeField] float jumpForce;
     [SerializeField] float jumpTime;
     
-    [SerializeField] private float jumpTimeCounter;
-    [SerializeField] public bool isGrounded = false;
-    [SerializeField] bool isJumping = false;
-    [SerializeField] bool isAttacking = false;
-    [SerializeField] bool isRolling = false;
-    [SerializeField] bool isSneaking = false;
+    private float jumpTimeCounter;
+    public bool isGrounded = false;
+    private bool isJumping = false;
+    private bool isAttacking = false;
+    private bool isRolling = false;
+    private bool isSneaking = false;
 
-    [SerializeField] private NetworkVariable<float> networkPlayerMoveX = new NetworkVariable<float>();
-    [SerializeField] private NetworkVariable<float> networkPlayerMoveY = new NetworkVariable<float>();
-    [SerializeField] private NetworkVariable<float> networkPlayerVelocityY = new NetworkVariable<float>();
-    [SerializeField] private NetworkVariable<int> networkPlayerDirection = new NetworkVariable<int>();
-    [SerializeField] private NetworkVariable<AnimState> networkPlayerAnimState = new NetworkVariable<AnimState>();
-
+  /*  private float networkPlayerMoveX = 0;
+    private float networkPlayerMoveY = 0;
+    private float networkPlayerVelocityY = 0;
+    private int networkPlayerDirection = 1;
+    private AnimState networkPlayerAnimState = AnimState.Idle;
+*/
     Rigidbody2D rigidBody;
     private float saveClientPlayerMoveX = 0;
     private float saveClientPlayerMoveY = 0;
@@ -63,13 +64,15 @@ public class PlayerController : NetworkBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        view = GetComponent<PhotonView>(); 
+
         rigidBody = transform.GetComponent<Rigidbody2D>();
         animator = model.transform.GetComponent<Animator>();
         fovScript = fov.transform.GetComponent<FieldOfView>();
         
         Cursor.lockState = CursorLockMode.Confined;
 
-        if (IsClient && IsOwner)
+        if (view.IsMine)
         {
             camera.SetActive(true);
             groundCheck.SetActive(true);
@@ -79,54 +82,60 @@ public class PlayerController : NetworkBehaviour
         }
     }
 
-    private void Update() {
-
-        mousePos = new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0);
-        mouseWorldPos = Camera.main.ScreenToWorldPoint(new Vector3(mousePos.x, mousePos.y, 0));
-
-        if (Input.GetKeyDown(KeyCode.Escape))
+    private void Update() 
+    {
+        if (view.IsMine)
         {
-            Cursor.lockState = CursorLockMode.None;
-        }
+            mousePos = new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0);
+            mouseWorldPos = Camera.main.ScreenToWorldPoint(new Vector3(mousePos.x, mousePos.y, 0));
 
-        // Movement logic
-        if (IsClient && IsOwner)
-        {
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                Cursor.lockState = CursorLockMode.None;
+            }
+
+
+            // Movement logic
             ClientInput();
+            ClientMove();
+            //ClientAnimate();
+
         }
-        ClientMove();
-        ClientAnimate();
+       
     }
 
     private void LateUpdate()
     {
-        // rotate head
-        float angle = Utils.GetAimAngle(head.transform.position, mouseWorldPos, true) * 0.6f;
-        head.transform.localRotation = Quaternion.Euler(new Vector3(0, 0, -angle));
-
-        Vector3 referencePos = head.transform.position;
-        if (isSneaking)
+        if (view.IsMine)
         {
-            headDisplacementY = Mathf.Clamp(headDisplacementY + Input.GetAxis("Mouse ScrollWheel") * scrollSpeed, -0.4f, 0.4f);
-            
-            if (headDisplacementY <= 0)
+            // rotate head
+            float angle = Utils.GetAimAngle(head.transform.position, mouseWorldPos, true) * 0.6f;
+            head.transform.localRotation = Quaternion.Euler(new Vector3(0, 0, -angle));
+
+            Vector3 referencePos = head.transform.position;
+            if (isSneaking)
             {
-                head.transform.position += new Vector3(0, headDisplacementY, 0);
-                referencePos = head.transform.position;
+                headDisplacementY = Mathf.Clamp(headDisplacementY + Input.GetAxis("Mouse ScrollWheel") * scrollSpeed, -0.4f, 0.4f);
+
+                if (headDisplacementY <= 0)
+                {
+                    head.transform.position += new Vector3(0, headDisplacementY, 0);
+                    referencePos = head.transform.position;
+                }
+                else
+                {
+                    referencePos = head.transform.position + new Vector3(0, headDisplacementY, 0);
+                    fov.GetComponent<FieldOfView>().SetOrigin(referencePos);
+                }
             }
-            else
-            {
-                referencePos = head.transform.position + new Vector3(0, headDisplacementY, 0);
-                fov.GetComponent<FieldOfView>().SetOrigin(referencePos);
-            }
+
+            // FOV
+            fovScript.SetOrigin(referencePos);
+            fovScript.SetAimAngle(referencePos, mouseWorldPos);
+
+            // flashlight
+            flashlight.transform.position = referencePos;
         }
-
-        // FOV
-        fovScript.SetOrigin(referencePos);
-        fovScript.SetAimAngle(referencePos, mouseWorldPos);
-
-        // flashlight
-        flashlight.transform.position = referencePos;
     }
 
     private void ClientInput()
@@ -150,29 +159,30 @@ public class PlayerController : NetworkBehaviour
         InputJump();
 
         // If in the middle of an uninterruptable animation, don't receive any inputs from the player.
-        if (CheckAnimationUninterruptible())
+       /* if (CheckAnimationUninterruptible())
         {
             SetActionStatusVariables();
-            UpdateClientVelocityServerRpc(saveClientPlayerVelocityY);
-            UpdateClientPositionAndDirectionServerRpc(saveClientPlayerMoveX, saveClientPlayerMoveY, saveClientDirection);
+            //UpdateClientVelocityServerRpc(saveClientPlayerVelocityY);
+            //UpdateClientPositionAndDirectionServerRpc(saveClientPlayerMoveX, saveClientPlayerMoveY, saveClientDirection);
             return;
         }
         else
         {
             isAttacking = false;
             isRolling = false;
-        }
+        }*/
 
         // Flashlight
-        if (Input.GetKeyDown(KeyCode.Mouse1)) {
+        if (Input.GetKeyDown(KeyCode.Mouse1))
+        {
             if (flashlight.activeSelf)
             {
                 flashlight.SetActive(false);
-            } 
+            }
             else
             {
                 flashlight.SetActive(true);
-            }                
+            }
         }
 
         if (Input.GetKeyDown(KeyCode.LeftControl))
@@ -197,16 +207,16 @@ public class PlayerController : NetworkBehaviour
 
         // Roll and attack
         //InputRollAndAttack(playerMovingForward);
-
+/*
         UpdateClientPositionAndDirectionServerRpc(saveClientPlayerMoveX, saveClientPlayerMoveY, saveClientDirection);
-        UpdateClientVelocityServerRpc(saveClientPlayerVelocityY);
+        UpdateClientVelocityServerRpc(saveClientPlayerVelocityY);*/
     }
 
 
     private bool CheckAnimationUninterruptible()
     {
         if (animator.GetCurrentAnimatorStateInfo(0).IsName("Attack") ||
-            animator.GetCurrentAnimatorStateInfo(0).IsName("Roll") || 
+            animator.GetCurrentAnimatorStateInfo(0).IsName("Roll") ||
             animator.GetCurrentAnimatorStateInfo(0).IsName("ReverseRoll"))
         {
             return true;
@@ -214,7 +224,7 @@ public class PlayerController : NetworkBehaviour
         return false;
     }
 
-    private void SetActionStatusVariables()
+/*    private void SetActionStatusVariables()
     {
         isAttacking = false;
         isRolling = false;
@@ -229,7 +239,7 @@ public class PlayerController : NetworkBehaviour
             return;
         }
         return;
-    }
+    }*/
 
     private void InputJump()
     {
@@ -274,12 +284,12 @@ public class PlayerController : NetworkBehaviour
                 if (!isSneaking)
                 {
                     saveClientPlayerMoveX += moveSpeed;
-                    UpdateClientAnimStateServerRpc(AnimState.Walk);
+                    //UpdateClientAnimStateServerRpc(AnimState.Walk);
                 }
                 else
                 {
                     saveClientPlayerMoveX += moveSpeed * slowDownMultiplier;
-                    UpdateClientAnimStateServerRpc(AnimState.SneakWalk);
+                    //UpdateClientAnimStateServerRpc(AnimState.SneakWalk);
                 }
             }
             else if (saveClientDirection == 1)  // facing left
@@ -288,12 +298,12 @@ public class PlayerController : NetworkBehaviour
                 if (!isSneaking)
                 {
                     saveClientPlayerMoveX += moveSpeed * slowDownMultiplier;
-                    UpdateClientAnimStateServerRpc(AnimState.ReverseWalk);
+                    //UpdateClientAnimStateServerRpc(AnimState.ReverseWalk);
                 }
                 else
                 {
                     saveClientPlayerMoveX += moveSpeed * slowDownMultiplier;
-                    UpdateClientAnimStateServerRpc(AnimState.SneakWalk);
+                    //UpdateClientAnimStateServerRpc(AnimState.SneakWalk);
                 }
             }
         }
@@ -305,12 +315,12 @@ public class PlayerController : NetworkBehaviour
                 if (!isSneaking)
                 {
                     saveClientPlayerMoveX -= moveSpeed;
-                    UpdateClientAnimStateServerRpc(AnimState.Walk);
+                    //UpdateClientAnimStateServerRpc(AnimState.Walk);
                 }
                 else
                 {
                     saveClientPlayerMoveX -= moveSpeed * slowDownMultiplier;
-                    UpdateClientAnimStateServerRpc(AnimState.SneakWalk);
+                    //UpdateClientAnimStateServerRpc(AnimState.SneakWalk);
                 }
             }
             else if (saveClientDirection == -1) //facing right
@@ -319,12 +329,12 @@ public class PlayerController : NetworkBehaviour
                 if (!isSneaking)
                 {
                     saveClientPlayerMoveX -= moveSpeed * slowDownMultiplier;
-                    UpdateClientAnimStateServerRpc(AnimState.ReverseWalk);
+                    //UpdateClientAnimStateServerRpc(AnimState.ReverseWalk);
                 }
                 else
                 {
                     saveClientPlayerMoveX -= moveSpeed * slowDownMultiplier;
-                    UpdateClientAnimStateServerRpc(AnimState.SneakWalk);
+                    //UpdateClientAnimStateServerRpc(AnimState.SneakWalk);
                 }
             }
         }
@@ -332,11 +342,11 @@ public class PlayerController : NetworkBehaviour
         {
             if (!isSneaking)
             {
-                UpdateClientAnimStateServerRpc(AnimState.Idle);
+                //UpdateClientAnimStateServerRpc(AnimState.Idle);
             }
             else
             {
-                UpdateClientAnimStateServerRpc(AnimState.SneakIdle);
+                //UpdateClientAnimStateServerRpc(AnimState.SneakIdle);
             }
         }
 
@@ -345,7 +355,6 @@ public class PlayerController : NetworkBehaviour
 
     private int GetForwardDirection()
     {
-        //if (mousePos.x / Screen.width < 0.5f)
         if (mouseWorldPos.x < transform.position.x)
         {
             saveClientDirection = 1;    // facing left
@@ -357,7 +366,7 @@ public class PlayerController : NetworkBehaviour
         return saveClientDirection;
     }
 
-    private void InputRollAndAttack(int playerMovingForward)
+/*    private void InputRollAndAttack(int playerMovingForward)
     {
         if (Input.GetKey(KeyCode.S))
         {
@@ -377,24 +386,24 @@ public class PlayerController : NetworkBehaviour
             UpdateClientAnimStateServerRpc(AnimState.Attack);
             isRolling = false;
         }
-    }
+    }*/
 
 
     private void ClientMove()
     {
-        transform.position = new Vector3(transform.position.x + networkPlayerMoveX.Value*Time.deltaTime,
-            transform.position.y + networkPlayerMoveY.Value*Time.deltaTime,
+        transform.position = new Vector3(transform.position.x + saveClientPlayerMoveX * Time.deltaTime,
+            transform.position.y + saveClientPlayerMoveY * Time.deltaTime,
             transform.position.z);
 
-        model.transform.localScale = new Vector3(networkPlayerDirection.Value, transform.localScale.y, transform.localScale.z);
+        model.transform.localScale = new Vector3(saveClientDirection, transform.localScale.y, transform.localScale.z);
 
-        rigidBody.velocity = Vector2.up * networkPlayerVelocityY.Value;
+        rigidBody.velocity = Vector2.up * saveClientPlayerVelocityY;
     }
 
 
-    private void ClientAnimate()
+    /*private void ClientAnimate()
     {
-        if (isAttacking)
+*//*        if (isAttacking)
         {
             return;
         }
@@ -406,7 +415,7 @@ public class PlayerController : NetworkBehaviour
         {
             // Reset physics layers.
 
-        }
+        }*//*
 
 
         if (networkPlayerAnimState.Value == AnimState.Walk)
@@ -434,7 +443,7 @@ public class PlayerController : NetworkBehaviour
             animator.Play("SneakIdle");
             audioListener.GetComponent<AudioManager>().Pause();
         }
-       /* else if (networkPlayerAnimState.Value == AnimState.Attack)
+       *//* else if (networkPlayerAnimState.Value == AnimState.Attack)
         {
             animator.Play("Attack");
         }
@@ -445,10 +454,10 @@ public class PlayerController : NetworkBehaviour
         else if (networkPlayerAnimState.Value == AnimState.ReverseRoll)
         {
             animator.Play("ReverseRoll");
-        }*/
-    }
+        }*//*
+    }*/
 
-    [ServerRpc]
+   /* [PunRPC]
     public void UpdateClientPositionAndDirectionServerRpc(float clientPlayerMoveX, float clientPlayerMoveY, int clientDirection)
     {
         networkPlayerMoveX.Value = clientPlayerMoveX;
@@ -456,15 +465,15 @@ public class PlayerController : NetworkBehaviour
         networkPlayerDirection.Value = clientDirection;
     }
 
-    [ServerRpc]
+    [PunRPC]
     public void UpdateClientVelocityServerRpc(float clientPlayerVelocityY)
     {
         networkPlayerVelocityY.Value = clientPlayerVelocityY;
     }
 
-    [ServerRpc]
+    [PunRPC]
     public void UpdateClientAnimStateServerRpc(AnimState state)
     {
         networkPlayerAnimState.Value = state;
-    }
+    }*/
 }

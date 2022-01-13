@@ -89,12 +89,12 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.collections": {
-      "version": "1.0.0-pre.5",
+      "version": "1.1.0",
       "depth": 1,
       "source": "registry",
       "dependencies": {
         "com.unity.burst": "1.5.4",
-        "com.unity.test-framework": "1.1.22"
+        "com.unity.test-framework": "1.1.29"
       },
       "url": "https://packages.unity.com"
     },
@@ -138,14 +138,15 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.netcode.gameobjects": {
-      "version": "1.0.0-pre.3",
+      "version": "1.0.0-pre.4",
       "depth": 0,
       "source": "registry",
       "dependencies": {
-        "com.unity.modules.ai": "1.0.0",
         "com.unity.modules.animation": "1.0.0",
+        "com.unity.modules.physics": "1.0.0",
+        "com.unity.modules.physics2d": "1.0.0",
         "com.unity.nuget.mono-cecil": "1.10.1",
-        "com.unity.collections": "1.0.0-pre.5"
+        "com.unity.collections": "1.1.0"
       },
       "url": "https://packages.unity.com"
     },
