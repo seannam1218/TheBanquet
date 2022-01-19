@@ -20,7 +20,7 @@ public class Potion : MonoBehaviour
     {
         if (collision.gameObject.tag == "Player" || collision.gameObject.tag == "Agent")
         {
-            Color potionColor = gameObject.GetComponentsInChildren<SpriteRenderer>()[1].color;
+            Vector4 potionColor = (Vector4)gameObject.GetComponentsInChildren<SpriteRenderer>()[1].color;
             Utils.SetChildrenColor(collision.gameObject, potionColor);
             Destroy(gameObject);
         }

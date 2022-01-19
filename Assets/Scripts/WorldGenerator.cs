@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
 
-public class WorldGenerator : MonoBehaviour
+public class WorldGenerator : MonoBehaviourPun
 {
     [SerializeField] public GameObject playerPrefab;
     [SerializeField] public Transform[] spawnPoints;
@@ -13,7 +13,7 @@ public class WorldGenerator : MonoBehaviour
     [SerializeField] public GameObject[] boundingBoxes;
 
     [Header("[Settings]")]
-    [SerializeField] public int numDummies;
+    public int numDummies;
     public float maxTimeToPotionSpawn;
     public float potionSpawnChance;
 
@@ -23,10 +23,13 @@ public class WorldGenerator : MonoBehaviour
     private float[] lowerBoundaries;
     private float timeToPotionSpawn;
 
-
     // Start is called before the first frame update
     void Start()
     {
+        SpawnPlayer();
+
+        if (!PhotonNetwork.IsMasterClient) { return; }
+   
         // Determine the boundaries of each bounding box.
         leftBoundaries = new float[boundingBoxes.Length];
         rightBoundaries = new float[boundingBoxes.Length];
@@ -41,7 +44,6 @@ public class WorldGenerator : MonoBehaviour
             lowerBoundaries[i] = boundingBoxes[i].transform.position.y - boundingBoxes[i].transform.localScale.y / 2;
         }
 
-        SpawnPlayer();
         SpawnDummies(numDummies);
     }
 
@@ -49,15 +51,14 @@ public class WorldGenerator : MonoBehaviour
     {
         int randomNumber = Random.Range(0, spawnPoints.Length);
         Transform spawnPoint = spawnPoints[randomNumber];
-        Debug.Log(spawnPoint.position);
-        Debug.Log(Quaternion.identity);
-        Debug.Log(playerPrefab.name);
         PhotonNetwork.Instantiate(playerPrefab.name, new Vector3(-3f, -0f, 0f), Quaternion.identity);
     }
     
 
-    private void Update()
+    private void FixedUpdate()
     {
+        if (!PhotonNetwork.IsMasterClient) { return; }
+
         timeToPotionSpawn -= Time.deltaTime;
         if (timeToPotionSpawn <= 0)
         {
@@ -69,11 +70,15 @@ public class WorldGenerator : MonoBehaviour
                 // Spawn dummy within bounding box
                 float x = Random.Range(leftBoundaries[boxIndex], rightBoundaries[boxIndex]);
                 float y = Random.Range(upperBoundaries[boxIndex], lowerBoundaries[boxIndex]);
-                GameObject spawnedPotion = PhotonNetwork.Instantiate(colorPotion.name, new Vector3(x, y, 0), Quaternion.identity);
 
                 // Assign random color to potion
-                Color randColor = new Color(Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f), 1f);
-                Utils.SetChildrenColor(spawnedPotion, randColor);
+                float randR = Random.Range(0f, 1f);
+                float randG = Random.Range(0f, 1f);
+                float randB = Random.Range(0f, 1f);
+                
+                GameObject spawnedPotion = PhotonNetwork.InstantiateRoomObject(colorPotion.name, new Vector3(x, y, 0), Quaternion.identity);
+                PhotonView spawnedPotionPv = spawnedPotion.GetComponent<PhotonView>();
+                photonView.RPC("SendGameObjectColorRpc", RpcTarget.All, spawnedPotionPv.ViewID, randR, randG, randB);
             }
             timeToPotionSpawn = maxTimeToPotionSpawn;
         }
@@ -90,15 +95,28 @@ public class WorldGenerator : MonoBehaviour
             // Spawn dummy within bounding box
             float x = Random.Range(leftBoundaries[boxIndex], rightBoundaries[boxIndex]);
             float y = Random.Range(upperBoundaries[boxIndex], lowerBoundaries[boxIndex]);
-            GameObject spawnedDummy = PhotonNetwork.Instantiate(dummy.name, new Vector3(x, y, 0), Quaternion.identity);
+            //GameObject spawnedDummy = PhotonNetwork.Instantiate(dummy.name, new Vector3(x, y, 0), Quaternion.identity);
 
             // Turn spawned dummy to left or right randomly
             int randomDirection = Random.Range(0, 2) * 2 - 1;
-            spawnedDummy.transform.localScale = new Vector3(randomDirection, spawnedDummy.transform.localScale.y, spawnedDummy.transform.localScale.z);
+            //spawnedDummy.transform.localScale = new Vector3(randomDirection, spawnedDummy.transform.localScale.y, spawnedDummy.transform.localScale.z);
 
             // Assign random colors to dummies
-            Color randColor = new Color(Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f), 1f);
-            Utils.SetChildrenColor(spawnedDummy, randColor);
+            float randR = Random.Range(0f, 1f);
+            float randG = Random.Range(0f, 1f);
+            float randB = Random.Range(0f, 1f);
+
+            GameObject spawnedDummy = PhotonNetwork.InstantiateRoomObject(dummy.name, new Vector3(x, y, 0), Quaternion.identity);
+            PhotonView spawnedDummyPv = spawnedDummy.GetComponent<PhotonView>();
+            photonView.RPC("SendGameObjectColorRpc", RpcTarget.All, spawnedDummyPv.ViewID, randR, randG, randB);
         }
+    }
+
+    [PunRPC]
+    private void SendGameObjectColorRpc(int Id, float r, float g, float b)
+    {
+        PhotonView view = PhotonView.Find(Id);
+        Color color = new Color(r, g, b, 1f);
+        Utils.SetChildrenColor(view.gameObject, color);
     }
 }

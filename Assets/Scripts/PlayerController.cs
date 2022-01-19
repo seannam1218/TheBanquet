@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
 
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviourPun
 {
     public enum AnimState
     {
@@ -17,7 +17,7 @@ public class PlayerController : MonoBehaviour
         ReverseRoll
     }
 
-    private PhotonView view;
+    private PhotonView photonView;
 
     [SerializeField] GameObject camera;
     [SerializeField] GameObject groundCheck;
@@ -38,7 +38,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] float slowDownMultiplier;
     [SerializeField] float jumpForce;
     [SerializeField] float jumpTime;
-    
+
+    private AnimState animState;
     private float jumpTimeCounter;
     public bool isGrounded = false;
     private bool isJumping = false;
@@ -46,13 +47,7 @@ public class PlayerController : MonoBehaviour
     private bool isRolling = false;
     private bool isSneaking = false;
 
-  /*  private float networkPlayerMoveX = 0;
-    private float networkPlayerMoveY = 0;
-    private float networkPlayerVelocityY = 0;
-    private int networkPlayerDirection = 1;
-    private AnimState networkPlayerAnimState = AnimState.Idle;
-*/
-    Rigidbody2D rigidBody;
+    public Rigidbody2D rigidBody;
     private float saveClientPlayerMoveX = 0;
     private float saveClientPlayerMoveY = 0;
     private float saveClientPlayerVelocityY = 0;
@@ -64,78 +59,74 @@ public class PlayerController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        view = GetComponent<PhotonView>(); 
-
-        rigidBody = transform.GetComponent<Rigidbody2D>();
-        animator = model.transform.GetComponent<Animator>();
+        photonView = GetComponent<PhotonView>();
         fovScript = fov.transform.GetComponent<FieldOfView>();
         
-        Cursor.lockState = CursorLockMode.Confined;
+        if (!photonView.IsMine) { return; }
 
-        if (view.IsMine)
-        {
-            camera.SetActive(true);
-            groundCheck.SetActive(true);
-            fov.SetActive(true);
-            proximityLight.SetActive(true);
-            audioListener.SetActive(true);
-        }
+        Cursor.lockState = CursorLockMode.Confined;
+        rigidBody = GetComponent<Rigidbody2D>();
+        animator = model.transform.GetComponent<Animator>();
+       
+        camera.SetActive(true);
+        groundCheck.SetActive(true);
+        fov.SetActive(true);
+        proximityLight.SetActive(true);
+        audioListener.SetActive(true);
     }
 
     private void Update() 
     {
-        if (view.IsMine)
-        {
-            mousePos = new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0);
-            mouseWorldPos = Camera.main.ScreenToWorldPoint(new Vector3(mousePos.x, mousePos.y, 0));
-
-            if (Input.GetKeyDown(KeyCode.Escape))
-            {
-                Cursor.lockState = CursorLockMode.None;
-            }
-
-
-            // Movement logic
-            ClientInput();
-            ClientMove();
-            //ClientAnimate();
-
+        if (!photonView.IsMine) {   
+            return; 
         }
-       
+
+        mousePos = new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0);
+        mouseWorldPos = Camera.main.ScreenToWorldPoint(new Vector3(mousePos.x, mousePos.y, 0));
+
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            Cursor.lockState = CursorLockMode.None;
+        }
+
+        // Movement logic
+        ClientInput();
+        ClientMove();
+        ClientAnimate();
+
     }
 
     private void LateUpdate()
     {
-        if (view.IsMine)
+        if (!photonView.IsMine) { return; }
+
+        // rotate head
+        float angle = Utils.GetAimAngle(head.transform.position, mouseWorldPos, true) * 0.6f;
+        head.transform.localRotation = Quaternion.Euler(new Vector3(0, 0, -angle));
+
+        Vector3 referencePos = head.transform.position;
+        if (isSneaking)
         {
-            // rotate head
-            float angle = Utils.GetAimAngle(head.transform.position, mouseWorldPos, true) * 0.6f;
-            head.transform.localRotation = Quaternion.Euler(new Vector3(0, 0, -angle));
+            headDisplacementY = Mathf.Clamp(headDisplacementY + Input.GetAxis("Mouse ScrollWheel") * scrollSpeed, -0.4f, 0.4f);
 
-            Vector3 referencePos = head.transform.position;
-            if (isSneaking)
+            if (headDisplacementY <= 0)
             {
-                headDisplacementY = Mathf.Clamp(headDisplacementY + Input.GetAxis("Mouse ScrollWheel") * scrollSpeed, -0.4f, 0.4f);
-
-                if (headDisplacementY <= 0)
-                {
-                    head.transform.position += new Vector3(0, headDisplacementY, 0);
-                    referencePos = head.transform.position;
-                }
-                else
-                {
-                    referencePos = head.transform.position + new Vector3(0, headDisplacementY, 0);
-                    fov.GetComponent<FieldOfView>().SetOrigin(referencePos);
-                }
+                head.transform.position += new Vector3(0, headDisplacementY, 0);
+                referencePos = head.transform.position;
             }
-
-            // FOV
-            fovScript.SetOrigin(referencePos);
-            fovScript.SetAimAngle(referencePos, mouseWorldPos);
-
-            // flashlight
-            flashlight.transform.position = referencePos;
+            else
+            {
+                referencePos = head.transform.position + new Vector3(0, headDisplacementY, 0);
+                fov.GetComponent<FieldOfView>().SetOrigin(referencePos);
+            }
         }
+
+        // FOV
+        fovScript.SetOrigin(referencePos);
+        fovScript.SetAimAngle(referencePos, mouseWorldPos);
+
+        // flashlight
+        flashlight.transform.position = referencePos;
     }
 
     private void ClientInput()
@@ -159,30 +150,22 @@ public class PlayerController : MonoBehaviour
         InputJump();
 
         // If in the middle of an uninterruptable animation, don't receive any inputs from the player.
-       /* if (CheckAnimationUninterruptible())
+        if (CheckAnimationUninterruptible())
         {
             SetActionStatusVariables();
-            //UpdateClientVelocityServerRpc(saveClientPlayerVelocityY);
-            //UpdateClientPositionAndDirectionServerRpc(saveClientPlayerMoveX, saveClientPlayerMoveY, saveClientDirection);
             return;
         }
         else
         {
             isAttacking = false;
             isRolling = false;
-        }*/
+        }
 
         // Flashlight
         if (Input.GetKeyDown(KeyCode.Mouse1))
         {
-            if (flashlight.activeSelf)
-            {
-                flashlight.SetActive(false);
-            }
-            else
-            {
-                flashlight.SetActive(true);
-            }
+            photonView.RPC("SwitchOnOffFlashlightRpc", RpcTarget.All, flashlight.activeSelf);
+            //flashlight.SetActive(!flashlight.activeSelf);
         }
 
         if (Input.GetKeyDown(KeyCode.LeftControl))
@@ -206,10 +189,8 @@ public class PlayerController : MonoBehaviour
         int playerMovingForward = InputMovement(saveClientDirection);
 
         // Roll and attack
-        //InputRollAndAttack(playerMovingForward);
-/*
-        UpdateClientPositionAndDirectionServerRpc(saveClientPlayerMoveX, saveClientPlayerMoveY, saveClientDirection);
-        UpdateClientVelocityServerRpc(saveClientPlayerVelocityY);*/
+        InputRollAndAttack(playerMovingForward);
+
     }
 
 
@@ -224,7 +205,7 @@ public class PlayerController : MonoBehaviour
         return false;
     }
 
-/*    private void SetActionStatusVariables()
+    private void SetActionStatusVariables()
     {
         isAttacking = false;
         isRolling = false;
@@ -239,11 +220,11 @@ public class PlayerController : MonoBehaviour
             return;
         }
         return;
-    }*/
+    }
 
     private void InputJump()
     {
-        if (Input.GetKeyDown(KeyCode.W) && isGrounded && !CheckAnimationUninterruptible())
+        if (Input.GetKeyDown(KeyCode.W) && isGrounded) // && !CheckAnimationUninterruptible()
         {
             isJumping = true;
             jumpTimeCounter = jumpTime;
@@ -284,12 +265,12 @@ public class PlayerController : MonoBehaviour
                 if (!isSneaking)
                 {
                     saveClientPlayerMoveX += moveSpeed;
-                    //UpdateClientAnimStateServerRpc(AnimState.Walk);
+                    animState = AnimState.Walk;
                 }
                 else
                 {
                     saveClientPlayerMoveX += moveSpeed * slowDownMultiplier;
-                    //UpdateClientAnimStateServerRpc(AnimState.SneakWalk);
+                    animState = AnimState.SneakWalk;
                 }
             }
             else if (saveClientDirection == 1)  // facing left
@@ -298,12 +279,12 @@ public class PlayerController : MonoBehaviour
                 if (!isSneaking)
                 {
                     saveClientPlayerMoveX += moveSpeed * slowDownMultiplier;
-                    //UpdateClientAnimStateServerRpc(AnimState.ReverseWalk);
+                    animState = AnimState.ReverseWalk;
                 }
                 else
                 {
                     saveClientPlayerMoveX += moveSpeed * slowDownMultiplier;
-                    //UpdateClientAnimStateServerRpc(AnimState.SneakWalk);
+                    animState = AnimState.SneakWalk;
                 }
             }
         }
@@ -315,12 +296,12 @@ public class PlayerController : MonoBehaviour
                 if (!isSneaking)
                 {
                     saveClientPlayerMoveX -= moveSpeed;
-                    //UpdateClientAnimStateServerRpc(AnimState.Walk);
+                    animState = AnimState.Walk;
                 }
                 else
                 {
                     saveClientPlayerMoveX -= moveSpeed * slowDownMultiplier;
-                    //UpdateClientAnimStateServerRpc(AnimState.SneakWalk);
+                    animState = AnimState.SneakWalk;
                 }
             }
             else if (saveClientDirection == -1) //facing right
@@ -329,12 +310,12 @@ public class PlayerController : MonoBehaviour
                 if (!isSneaking)
                 {
                     saveClientPlayerMoveX -= moveSpeed * slowDownMultiplier;
-                    //UpdateClientAnimStateServerRpc(AnimState.ReverseWalk);
+                    animState = AnimState.ReverseWalk;
                 }
                 else
                 {
                     saveClientPlayerMoveX -= moveSpeed * slowDownMultiplier;
-                    //UpdateClientAnimStateServerRpc(AnimState.SneakWalk);
+                    animState = AnimState.SneakWalk;
                 }
             }
         }
@@ -342,11 +323,11 @@ public class PlayerController : MonoBehaviour
         {
             if (!isSneaking)
             {
-                //UpdateClientAnimStateServerRpc(AnimState.Idle);
+                animState = AnimState.Idle;
             }
             else
             {
-                //UpdateClientAnimStateServerRpc(AnimState.SneakIdle);
+                animState = AnimState.SneakIdle;
             }
         }
 
@@ -366,31 +347,33 @@ public class PlayerController : MonoBehaviour
         return saveClientDirection;
     }
 
-/*    private void InputRollAndAttack(int playerMovingForward)
+    private void InputRollAndAttack(int playerMovingForward)
     {
         if (Input.GetKey(KeyCode.S))
         {
             if (playerMovingForward > 0)
             {
-                UpdateClientAnimStateServerRpc(AnimState.Roll);
+                animState = AnimState.Roll;
             }
             else if (playerMovingForward < 0)
             {
-                UpdateClientAnimStateServerRpc(AnimState.ReverseRoll);
+                animState = AnimState.ReverseRoll;
             }
             isAttacking = false;
         }
         // Attack
         else if (Input.GetMouseButton(0))
         {
-            UpdateClientAnimStateServerRpc(AnimState.Attack);
+            animState = AnimState.Attack;
             isRolling = false;
         }
-    }*/
+    }
 
 
     private void ClientMove()
     {
+       /* photonView.RPC("UpdateClientPositionAndDirectionServerRpc", RpcTarget.All, saveClientPlayerMoveX, saveClientPlayerMoveY, saveClientDirection);
+        photonView.RPC("UpdateClientVelocityServerRpc", RpcTarget.All, saveClientPlayerVelocityY);*/
         transform.position = new Vector3(transform.position.x + saveClientPlayerMoveX * Time.deltaTime,
             transform.position.y + saveClientPlayerMoveY * Time.deltaTime,
             transform.position.z);
@@ -401,9 +384,9 @@ public class PlayerController : MonoBehaviour
     }
 
 
-    /*private void ClientAnimate()
+    private void ClientAnimate()
     {
-*//*        if (isAttacking)
+        if (isAttacking)
         {
             return;
         }
@@ -415,65 +398,77 @@ public class PlayerController : MonoBehaviour
         {
             // Reset physics layers.
 
-        }*//*
+        }
 
 
-        if (networkPlayerAnimState.Value == AnimState.Walk)
+        if (animState == AnimState.Walk)
         {
             animator.Play("Walk");
             audioListener.GetComponent<AudioManager>().Play("Fast Walk");
         }
-        else if (networkPlayerAnimState.Value == AnimState.ReverseWalk)
+        else if (animState == AnimState.ReverseWalk)
         {
             animator.Play("ReverseWalk");
             audioListener.GetComponent<AudioManager>().Play("Slow Walk");
         }
-        else if (networkPlayerAnimState.Value == AnimState.SneakWalk)
+        else if (animState == AnimState.SneakWalk)
         {
             animator.Play("SneakWalk");
             audioListener.GetComponent<AudioManager>().Play("Sneak Walk");
         }
-        else if (networkPlayerAnimState.Value == AnimState.Idle)
+        else if (animState == AnimState.Idle)
         {
             animator.Play("Idle");
             audioListener.GetComponent<AudioManager>().Pause();
         }
-        else if (networkPlayerAnimState.Value == AnimState.SneakIdle)
+        else if (animState == AnimState.SneakIdle)
         {
             animator.Play("SneakIdle");
             audioListener.GetComponent<AudioManager>().Pause();
         }
-       *//* else if (networkPlayerAnimState.Value == AnimState.Attack)
+        else if (animState == AnimState.Attack)
         {
             animator.Play("Attack");
         }
-        else if (networkPlayerAnimState.Value == AnimState.Roll)
+        else if (animState == AnimState.Roll)
         {
             animator.Play("Roll");
         }
-        else if (networkPlayerAnimState.Value == AnimState.ReverseRoll)
+        else if (animState == AnimState.ReverseRoll)
         {
             animator.Play("ReverseRoll");
-        }*//*
-    }*/
-
-   /* [PunRPC]
-    public void UpdateClientPositionAndDirectionServerRpc(float clientPlayerMoveX, float clientPlayerMoveY, int clientDirection)
-    {
-        networkPlayerMoveX.Value = clientPlayerMoveX;
-        networkPlayerMoveY.Value = clientPlayerMoveY;
-        networkPlayerDirection.Value = clientDirection;
+        }
     }
 
-    [PunRPC]
-    public void UpdateClientVelocityServerRpc(float clientPlayerVelocityY)
-    {
-        networkPlayerVelocityY.Value = clientPlayerVelocityY;
-    }
+    /* [PunRPC]
+     public void UpdateClientPositionAndDirectionServerRpc(float saveClientPlayerMoveX, float saveClientPlayerMoveY, int saveClientDirection)
+     {
+         transform.position = new Vector3(transform.position.x + saveClientPlayerMoveX * Time.deltaTime,
+             transform.position.y + saveClientPlayerMoveY * Time.deltaTime,
+             transform.position.z);
+
+         model.transform.localScale = new Vector3(saveClientDirection, transform.localScale.y, transform.localScale.z);
+     }
+
+     [PunRPC]
+     public void UpdateClientVelocityServerRpc(float saveClientPlayerVelocityY)
+     {
+         *//*Debug.Log(photonView.Owner + "======================");
+         Debug.Log(rigidBody);
+         Debug.Log(saveClientPlayerVelocityY);*//*
+         rigidBody.velocity = Vector3.up * saveClientPlayerVelocityY;
+     }*/
+    /*
+        [PunRPC]
+        public void UpdateClientAnimStateServerRpc(AnimState state)
+        {
+            networkPlayerAnimState.Value = state;
+        }*/
 
     [PunRPC]
-    public void UpdateClientAnimStateServerRpc(AnimState state)
+    public void SwitchOnOffFlashlightRpc(bool state)
     {
-        networkPlayerAnimState.Value = state;
-    }*/
+        flashlight.SetActive(!state);
+    }
+
 }
