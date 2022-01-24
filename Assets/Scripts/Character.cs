@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
 
-public class PlayerController : MonoBehaviourPun
+public class Character : MonoBehaviourPun
 {
     public enum AnimState
     {
@@ -20,10 +20,6 @@ public class PlayerController : MonoBehaviourPun
     private PhotonView photonView;
 
     [SerializeField] GameObject camera;
-    [SerializeField] GameObject groundCheck;
-    [SerializeField] GameObject leftCheck;
-    [SerializeField] GameObject rightCheck;
-    [SerializeField] GameObject topCheck;
     [SerializeField] GameObject model;
     [SerializeField] GameObject head;
     [SerializeField] GameObject fov;
@@ -31,36 +27,30 @@ public class PlayerController : MonoBehaviourPun
     [SerializeField] GameObject flashlight;
     [SerializeField] GameObject audioListener;
     FieldOfView fovScript;
+    CharacterController charController;
     private Animator animator;
     private Vector3 mousePos;
     private Vector3 mouseWorldPos;
 
     [Header("[Settings]")]
-    [SerializeField] float moveSpeed;
-    [SerializeField] float scrollSpeed;
-    [SerializeField] float slowDownMultiplier;
-    [SerializeField] float jumpForce;
-    [SerializeField] float jumpTime;
+    [SerializeField] float moveSpeed = 6f;
+    [SerializeField] float scrollSpeed = 0.8f;
+    [SerializeField] float slowDownMultiplier = 0.5f;
+    [SerializeField] float jumpForce = 12f;
+    [SerializeField] float jumpTime = 0.4f;
 
     private AnimState animState;
     private float jumpTimeCounter;
-    public bool isGrounded = false;
-    public bool isBlockedOnLeft = false;
-    public bool isBlockedOnRight = false;
-    public bool isBlockedOnTop = false;
     private bool isJumping = false;
     private bool isAttacking = false;
     private bool isRolling = false;
     private bool isSneaking = false;
 
-    private Rigidbody2D rigidBody;
-    private PhotonView pv;
-    //private PhotonTransformViewClassic ptfv;
     private float saveClientPlayerMoveX = 0;
     private float saveClientPlayerMoveY = 0;
     private float saveClientPlayerVelocityY = 0;
     private int saveClientDirection = 0;
-    private float gravity = 30f;
+    private float gravity = 0.05f;
     private float headDisplacementY = 0f;
 
 
@@ -69,30 +59,24 @@ public class PlayerController : MonoBehaviourPun
     {
         photonView = GetComponent<PhotonView>();
         fovScript = fov.transform.GetComponent<FieldOfView>();
-        
+
         if (!photonView.IsMine) { return; }
 
         Cursor.lockState = CursorLockMode.Confined;
-        rigidBody = GetComponent<Rigidbody2D>();
+        charController = GetComponent<CharacterController>();
         animator = model.transform.GetComponent<Animator>();
-        pv = GetComponent<PhotonView>();
-        //ptfv = GetComponent<PhotonTransformViewClassic>();
 
         camera.SetActive(true);
-        groundCheck.SetActive(true);
-        leftCheck.SetActive(true);
-        rightCheck.SetActive(true);
-        topCheck.SetActive(true);
-
         fov.SetActive(true);
         proximityLight.SetActive(true);
         audioListener.SetActive(true);
     }
 
-    private void Update() 
+    private void Update()
     {
-        if (!photonView.IsMine) {   
-            return; 
+        if (!photonView.IsMine)
+        {
+            return;
         }
 
         mousePos = new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0);
@@ -108,6 +92,13 @@ public class PlayerController : MonoBehaviourPun
         ClientMove();
         ClientAnimate();
 
+        if (charController.isGrounded)
+        {
+            Debug.Log("GROUNDED!");
+        }
+
+        PhotonTransformViewClassic ptvc = GetComponent<PhotonTransformViewClassic>();
+        ptvc.m_PositionModel.ExtrapolateSpeed = 1;
     }
 
     private void LateUpdate()
@@ -145,10 +136,8 @@ public class PlayerController : MonoBehaviourPun
 
     private void ClientInput()
     {
-        saveClientPlayerMoveY = 0;
-
         // Gravity
-        if (isGrounded)
+        if (charController.isGrounded)
         {
             saveClientPlayerVelocityY = 0;
         }
@@ -188,14 +177,13 @@ public class PlayerController : MonoBehaviourPun
         }
 
         // Dropping from one way platforms
-        if (isGrounded && gameObject.layer != 7)
+        if (charController.isGrounded && gameObject.layer != 7)
         {
             gameObject.layer = 7;
         }
         if (Input.GetKey(KeyCode.S))
         {
             gameObject.layer = 6;
-            isGrounded = false;
         }
 
 
@@ -238,7 +226,7 @@ public class PlayerController : MonoBehaviourPun
 
     private void InputJump()
     {
-        if (Input.GetKeyDown(KeyCode.W) && isGrounded) // && !CheckAnimationUninterruptible()
+        if (Input.GetKeyDown(KeyCode.W) && charController.isGrounded) // && !CheckAnimationUninterruptible()
         {
             isJumping = true;
             jumpTimeCounter = jumpTime;
@@ -246,21 +234,16 @@ public class PlayerController : MonoBehaviourPun
         }
         if (Input.GetKey(KeyCode.W) && isJumping)
         {
-            if (jumpTimeCounter < 0)
-            {
-                isJumping = false;
-                saveClientPlayerVelocityY = jumpForce / 2;
-            }
-            else if (isBlockedOnTop)
-            {
-                isJumping = false;
-                saveClientPlayerVelocityY = 0;
-            }
-            else
+            if (jumpTimeCounter > 0)
             {
                 saveClientPlayerMoveY = jumpForce;
                 saveClientPlayerVelocityY = 0;
                 jumpTimeCounter -= Time.deltaTime;
+            }
+            else
+            {
+                isJumping = false;
+                saveClientPlayerVelocityY = jumpForce / 2;
             }
         }
         if (Input.GetKeyUp(KeyCode.W) && isJumping)
@@ -275,8 +258,8 @@ public class PlayerController : MonoBehaviourPun
         saveClientPlayerMoveX = 0;
         int playerMovingForward = 0;
 
-        // Movement towards right
-        if (Input.GetKey(KeyCode.D) && !isBlockedOnRight)
+        // Movement
+        if (Input.GetKey(KeyCode.D))
         {
             if (saveClientDirection == -1)  //facing right
             {
@@ -307,8 +290,7 @@ public class PlayerController : MonoBehaviourPun
                 }
             }
         }
-        // Movement towards left
-        else if (Input.GetKey(KeyCode.A) && !isBlockedOnLeft)
+        else if (Input.GetKey(KeyCode.A))
         {
             if (saveClientDirection == 1)   // facing left
             {
@@ -392,17 +374,18 @@ public class PlayerController : MonoBehaviourPun
 
     private void ClientMove()
     {
-        //photonView.RPC("UpdateClientPositionAndDirectionServerRpc", RpcTarget.All, saveClientPlayerMoveX, saveClientPlayerMoveY, saveClientDirection);
+        charController.Move(new Vector3(saveClientPlayerMoveX * Time.deltaTime,
+            saveClientPlayerMoveY * Time.deltaTime + saveClientPlayerVelocityY,
+            0));
 
-        transform.position = new Vector3(transform.position.x + saveClientPlayerMoveX * Time.deltaTime,
-           transform.position.y + saveClientPlayerMoveY * Time.deltaTime,
-           transform.position.z);
-       
+        
+
+        //Debug.Log(saveClientPlayerMoveY);
+        //transform.position = new Vector3(transform.position.x + saveClientPlayerMoveX * Time.deltaTime,
+        //    transform.position.y + saveClientPlayerMoveY * Time.deltaTime,
+        //    transform.position.z);
+
         model.transform.localScale = new Vector3(saveClientDirection, transform.localScale.y, transform.localScale.z);
-
-        rigidBody.velocity = Vector2.up * saveClientPlayerVelocityY;
-
-        //photonView.RPC("UpdateLagCompensationValuesRpc", RpcTarget.All, pv.ViewID, saveClientPlayerMoveX, saveClientPlayerMoveY, saveClientPlayerVelocityY);
     }
 
 
@@ -460,36 +443,6 @@ public class PlayerController : MonoBehaviourPun
         {
             animator.Play("ReverseRoll");
         }
-    }
-
-   /* [PunRPC]
-    public void UpdateClientPositionAndDirectionServerRpc(float saveClientPlayerMoveX, float saveClientPlayerMoveY, int saveClientDirection)
-    {
-        transform.position = new Vector3(transform.position.x + saveClientPlayerMoveX * Time.deltaTime,
-           transform.position.y + saveClientPlayerMoveY * Time.deltaTime,
-           transform.position.z);
-
-        model.transform.localScale = new Vector3(saveClientDirection, transform.localScale.y, transform.localScale.z);
-    }
-
-    [PunRPC]
-    public void UpdateClientVelocityServerRpc(float saveClientPlayerVelocityY)
-    {
-        transform.GetComponent<Rigidbody2D>().velocity = Vector2.up * saveClientPlayerVelocityY;
-    }*/
-    /*
-        [PunRPC]
-        public void UpdateClientAnimStateServerRpc(AnimState state)
-        {
-            networkPlayerAnimState.Value = state;
-        }*/
-
-    [PunRPC]
-    public void UpdateLagCompensationValuesRpc(int Id, float saveClientPlayerMoveX, float saveClientPlayerMoveY, float saveClientPlayerVelocityY)
-    {
-        PhotonView view = PhotonView.Find(Id);
-        PhotonTransformViewClassic ptfv = view.gameObject.GetComponent<PhotonTransformViewClassic>();
-        ptfv.m_PositionModel.InterpolateMoveTowardsSpeed = Mathf.Pow(Mathf.Pow(saveClientPlayerMoveX, 2f) + Mathf.Pow(saveClientPlayerMoveY, 2f), 1f);
     }
 
     [PunRPC]

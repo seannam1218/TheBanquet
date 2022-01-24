@@ -55,24 +55,27 @@
   <ItemGroup>
     <Compile Include="Assets\Photon\PhotonLibs\WebSocket\SocketWebTcp.cs" />
     <Compile Include="Assets\Scripts\AudioManager.cs" />
-    <Compile Include="Assets\Scripts\PlayerItem.cs" />
+    <Compile Include="Assets\Scripts\NetworkScripts\PlayerItem.cs" />
     <Compile Include="Assets\Scripts\WorldGenerator.cs" />
-    <Compile Include="Assets\Scripts\ConnectToServer.cs" />
+    <Compile Include="Assets\Scripts\NetworkScripts\ConnectToServer.cs" />
     <Compile Include="Assets\Scripts\PlayerController.cs" />
     <Compile Include="Assets\Scripts\CameraController.cs" />
-    <Compile Include="Assets\Scripts\RoomItem.cs" />
+    <Compile Include="Assets\Scripts\NetworkScripts\RoomItem.cs" />
     <Compile Include="Assets\Scripts\CrosshairController.cs" />
-    <Compile Include="Assets\Scripts\LobbyManager.cs" />
+    <Compile Include="Assets\Scripts\NetworkScripts\LobbyManager.cs" />
     <Compile Include="Assets\Photon\PhotonLibs\WebSocket\WebSocket.cs" />
     <Compile Include="Assets\Scripts\ColorController.cs" />
     <Compile Include="Assets\Scripts\Sound.cs" />
-    <Compile Include="Assets\Scripts\SpawnPlayers.cs" />
     <Compile Include="Assets\Scripts\Dummy.cs" />
     <Compile Include="Assets\Scripts\GroundSensor.cs" />
     <Compile Include="Assets\Scripts\Utils.cs" />
+    <Compile Include="Assets\Scripts\Flashlight.cs" />
+    <Compile Include="Assets\Scripts\Character.cs" />
     <Compile Include="Assets\Scripts\Potion.cs" />
     <Compile Include="Assets\Scripts\FieldOfView.cs" />
-    <Compile Include="Assets\Scripts\Flashlight.cs" />
+    <Compile Include="Assets\Scripts\LeftSensor.cs" />
+    <Compile Include="Assets\Scripts\RightSensor.cs" />
+    <Compile Include="Assets\Scripts\TopSensor.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Photon\PhotonLibs\netstandard2.0\Photon3Unity3D.xml" />

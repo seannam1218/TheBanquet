@@ -22,6 +22,7 @@ public class WorldGenerator : MonoBehaviourPun
     private float[] upperBoundaries;
     private float[] lowerBoundaries;
     private float timeToPotionSpawn;
+    private float padding = 2f;
 
     // Start is called before the first frame update
     void Start()
