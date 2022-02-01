@@ -2,9 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
-using Unity.Netcode;
 
-public class CameraController : NetworkBehaviour
+public class CameraController : MonoBehaviour
 {
 	private float yOffset = -0.5f;
 	private Transform target;

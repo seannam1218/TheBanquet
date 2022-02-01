@@ -46,6 +46,19 @@ MonoBehaviour:
   - SendPotionColorRpc
   - SendGameObjectColorRpc
   - UpdateLagCompensationValuesRpc
+  - SendGameObjectDirectionRpc
+  - EquipWeaponRpc
+  - ToggleFlashlightRpc
+  - ShootBulletRpc
+  - DestroyObject
+  - SetTarget
+  - DeclareTrajectory
+  - SetAnimState
+  - PlayAnimationAndAudio
+  - PlayAudioRpc
+  - LoadAudioRpc
+  - PauseAudioRpc
+  - RotateHeadRpc
   DisableAutoOpenWizard: 1
   ShowSettings: 0
   DevRegionSetOnce: 1

@@ -26,10 +26,13 @@ public class PlayerController : MonoBehaviourPun
     [SerializeField] GameObject topCheck;
     [SerializeField] GameObject model;
     [SerializeField] GameObject head;
+    [SerializeField] GameObject weapon;
+    [SerializeField] GameObject headReference;
     [SerializeField] GameObject fov;
     [SerializeField] GameObject proximityLight;
     [SerializeField] GameObject flashlight;
-    [SerializeField] GameObject audioListener;
+    [SerializeField] GameObject audioSource;
+    
     FieldOfView fovScript;
     private Animator animator;
     private Vector3 mousePos;
@@ -42,7 +45,7 @@ public class PlayerController : MonoBehaviourPun
     [SerializeField] float jumpForce;
     [SerializeField] float jumpTime;
 
-    private AnimState animState;
+    public AnimState animState;
     private float jumpTimeCounter;
     public bool isGrounded = false;
     public bool isBlockedOnLeft = false;
@@ -54,8 +57,6 @@ public class PlayerController : MonoBehaviourPun
     private bool isSneaking = false;
 
     private Rigidbody2D rigidBody;
-    private PhotonView pv;
-    //private PhotonTransformViewClassic ptfv;
     private float saveClientPlayerMoveX = 0;
     private float saveClientPlayerMoveY = 0;
     private float saveClientPlayerVelocityY = 0;
@@ -64,21 +65,19 @@ public class PlayerController : MonoBehaviourPun
     private float headDisplacementY = 0f;
 
 
-    // Start is called before the first frame update
     void Start()
     {
         photonView = GetComponent<PhotonView>();
-        fovScript = fov.transform.GetComponent<FieldOfView>();
-        
+        animator = model.transform.GetComponent<Animator>();
+
         if (!photonView.IsMine) { return; }
 
         Cursor.lockState = CursorLockMode.Confined;
         rigidBody = GetComponent<Rigidbody2D>();
-        animator = model.transform.GetComponent<Animator>();
-        pv = GetComponent<PhotonView>();
-        //ptfv = GetComponent<PhotonTransformViewClassic>();
+        fovScript = fov.transform.GetComponent<FieldOfView>();
 
         camera.SetActive(true);
+        weapon.SetActive(false);
         groundCheck.SetActive(true);
         leftCheck.SetActive(true);
         rightCheck.SetActive(true);
@@ -86,15 +85,13 @@ public class PlayerController : MonoBehaviourPun
 
         fov.SetActive(true);
         proximityLight.SetActive(true);
-        audioListener.SetActive(true);
     }
 
     private void Update() 
     {
-        if (!photonView.IsMine) {   
-            return; 
-        }
 
+        if (!photonView.IsMine) return;
+        
         mousePos = new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0);
         mouseWorldPos = Camera.main.ScreenToWorldPoint(new Vector3(mousePos.x, mousePos.y, 0));
 
@@ -106,7 +103,7 @@ public class PlayerController : MonoBehaviourPun
         // Movement logic
         ClientInput();
         ClientMove();
-        ClientAnimate();
+        //ClientAnimate();
 
     }
 
@@ -115,24 +112,33 @@ public class PlayerController : MonoBehaviourPun
         if (!photonView.IsMine) { return; }
 
         // rotate head
-        float angle = Utils.GetAimAngle(head.transform.position, mouseWorldPos, true) * 0.6f;
-        head.transform.localRotation = Quaternion.Euler(new Vector3(0, 0, -angle));
+        float headAngle = Utils.GetAimAngle(head.transform.position, mouseWorldPos, true) * 0.6f;
+        //head.transform.localRotation = Quaternion.Euler(new Vector3(0, 0, -headAngle));
+        photonView.RPC("RotateHeadRpc", RpcTarget.All, headAngle);
 
+        // rotate weapon
+        float weaponAngle = Utils.GetAimAngle(weapon.transform.position, mouseWorldPos, true);
+        weapon.transform.localRotation = Quaternion.Euler(new Vector3(0, 0, -weaponAngle));
+
+        // Crouch & peak over
         Vector3 referencePos = head.transform.position;
         if (isSneaking)
         {
-            headDisplacementY = Mathf.Clamp(headDisplacementY + Input.GetAxis("Mouse ScrollWheel") * scrollSpeed, -0.4f, 0.4f);
-
+            headDisplacementY = Mathf.Clamp(headDisplacementY + Input.GetAxis("Mouse ScrollWheel") * scrollSpeed * Time.deltaTime, -0.4f, 0.4f);
+            referencePos = headReference.transform.position + new Vector3(0, headDisplacementY, 0);
             if (headDisplacementY <= 0)
             {
-                head.transform.position += new Vector3(0, headDisplacementY, 0);
-                referencePos = head.transform.position;
+                head.transform.position = referencePos;
             }
             else
             {
-                referencePos = head.transform.position + new Vector3(0, headDisplacementY, 0);
-                fov.GetComponent<FieldOfView>().SetOrigin(referencePos);
+                head.transform.position = headReference.transform.position;
+                fovScript.SetOrigin(referencePos);
             }
+        }
+        else
+        {
+            head.transform.position = headReference.transform.position;
         }
 
         // FOV
@@ -178,13 +184,14 @@ public class PlayerController : MonoBehaviourPun
         // Flashlight
         if (Input.GetKeyDown(KeyCode.Mouse1))
         {
-            photonView.RPC("SwitchOnOffFlashlightRpc", RpcTarget.All, flashlight.activeSelf);
-            //flashlight.SetActive(!flashlight.activeSelf);
+            photonView.RPC("ToggleFlashlightRpc", RpcTarget.All, flashlight.activeSelf);
         }
 
+        // Sneak
         if (Input.GetKeyDown(KeyCode.LeftControl))
         {
             isSneaking = !isSneaking;
+            animator.SetBool("Sneak", isSneaking);
         }
 
         // Dropping from one way platforms
@@ -202,8 +209,15 @@ public class PlayerController : MonoBehaviourPun
         // Movement
         int playerMovingForward = InputMovement(saveClientDirection);
 
+
+        // Equipping
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+        {
+            photonView.RPC("EquipWeaponRpc", RpcTarget.All, weapon.activeSelf);
+        }
+
         // Roll and attack
-        InputRollAndAttack(playerMovingForward);
+        //InputRollAndAttack(playerMovingForward);
 
     }
 
@@ -273,85 +287,59 @@ public class PlayerController : MonoBehaviourPun
     private int InputMovement(int saveClientDirection)
     {
         saveClientPlayerMoveX = 0;
-        int playerMovingForward = 0;
+        int playerMovingDir = 0;
 
         // Movement towards right
         if (Input.GetKey(KeyCode.D) && !isBlockedOnRight)
         {
-            if (saveClientDirection == -1)  //facing right
-            {
-                playerMovingForward = 1;
-                if (!isSneaking)
-                {
-                    saveClientPlayerMoveX += moveSpeed;
-                    animState = AnimState.Walk;
-                }
-                else
-                {
-                    saveClientPlayerMoveX += moveSpeed * slowDownMultiplier;
-                    animState = AnimState.SneakWalk;
-                }
-            }
-            else if (saveClientDirection == 1)  // facing left
-            {
-                playerMovingForward = -1;
-                if (!isSneaking)
-                {
-                    saveClientPlayerMoveX += moveSpeed * slowDownMultiplier;
-                    animState = AnimState.ReverseWalk;
-                }
-                else
-                {
-                    saveClientPlayerMoveX += moveSpeed * slowDownMultiplier;
-                    animState = AnimState.SneakWalk;
-                }
-            }
+            playerMovingDir = 1;
+            HandleMoveAndMoveSound(playerMovingDir, saveClientDirection);
         }
         // Movement towards left
         else if (Input.GetKey(KeyCode.A) && !isBlockedOnLeft)
         {
-            if (saveClientDirection == 1)   // facing left
-            {
-                playerMovingForward = 1;
-                if (!isSneaking)
-                {
-                    saveClientPlayerMoveX -= moveSpeed;
-                    animState = AnimState.Walk;
-                }
-                else
-                {
-                    saveClientPlayerMoveX -= moveSpeed * slowDownMultiplier;
-                    animState = AnimState.SneakWalk;
-                }
-            }
-            else if (saveClientDirection == -1) //facing right
-            {
-                playerMovingForward = -1;
-                if (!isSneaking)
-                {
-                    saveClientPlayerMoveX -= moveSpeed * slowDownMultiplier;
-                    animState = AnimState.ReverseWalk;
-                }
-                else
-                {
-                    saveClientPlayerMoveX -= moveSpeed * slowDownMultiplier;
-                    animState = AnimState.SneakWalk;
-                }
-            }
+            playerMovingDir = -1;
+            HandleMoveAndMoveSound(playerMovingDir, saveClientDirection);
         }
         else
         {
+            audioSource.GetComponent<AudioManager>().Pause();
             if (!isSneaking)
             {
-                animState = AnimState.Idle;
+                animator.SetBool("WalkBackward", false);
+                animator.SetBool("WalkForward", false);
             }
             else
             {
-                animState = AnimState.SneakIdle;
+                animator.SetBool("WalkBackward", false);
+                animator.SetBool("WalkForward", false);
             }
         }
 
-        return playerMovingForward;
+        return playerMovingDir * -saveClientDirection;
+    }
+
+    private void HandleMoveAndMoveSound(int movingDir, int facingDir)
+    {
+        int moveForward = movingDir * -facingDir;
+        animator.SetBool("WalkForward", (moveForward == 1 ? true : false));
+        animator.SetBool("WalkBackward", (moveForward == -1 ? true : false));
+        float speed = (movingDir > 0 ? moveSpeed : -moveSpeed);
+        if (isSneaking)
+        {
+            saveClientPlayerMoveX += speed * slowDownMultiplier;
+            audioSource.GetComponent<AudioManager>().Play("Sneak Walk");
+        }
+        else if (movingDir != -facingDir) // if walking backward
+        {
+            saveClientPlayerMoveX += speed * slowDownMultiplier;
+            audioSource.GetComponent<AudioManager>().Play("Slow Walk");
+        }
+        else // if walking forward
+        {
+            saveClientPlayerMoveX += speed;
+            audioSource.GetComponent<AudioManager>().Play("Fast Walk");
+        }
     }
 
     private int GetForwardDirection()
@@ -367,33 +355,34 @@ public class PlayerController : MonoBehaviourPun
         return saveClientDirection;
     }
 
-    private void InputRollAndAttack(int playerMovingForward)
+    /*private void InputRollAndAttack(int playerMovingForward)
     {
         if (Input.GetKey(KeyCode.S))
         {
             if (playerMovingForward > 0)
             {
-                animState = AnimState.Roll;
+                //animState = AnimState.Roll;
+                photonView.RPC("SetAnimState", RpcTarget.AllBuffered, AnimState.Roll);
             }
             else if (playerMovingForward < 0)
             {
-                animState = AnimState.ReverseRoll;
+                //animState = AnimState.ReverseRoll;
+                photonView.RPC("SetAnimState", RpcTarget.AllBuffered, AnimState.ReverseRoll);
             }
             isAttacking = false;
         }
         // Attack
         else if (Input.GetMouseButton(0))
         {
-            animState = AnimState.Attack;
+            //animState = AnimState.Attack;
+            photonView.RPC("SetAnimState", RpcTarget.AllBuffered, AnimState.Attack);
             isRolling = false;
         }
-    }
+    }*/
 
 
     private void ClientMove()
     {
-        //photonView.RPC("UpdateClientPositionAndDirectionServerRpc", RpcTarget.All, saveClientPlayerMoveX, saveClientPlayerMoveY, saveClientDirection);
-
         transform.position = new Vector3(transform.position.x + saveClientPlayerMoveX * Time.deltaTime,
            transform.position.y + saveClientPlayerMoveY * Time.deltaTime,
            transform.position.z);
@@ -402,11 +391,12 @@ public class PlayerController : MonoBehaviourPun
 
         rigidBody.velocity = Vector2.up * saveClientPlayerVelocityY;
 
+        //photonView.RPC("UpdateClientPositionAndDirectionServerRpc", RpcTarget.All, saveClientPlayerMoveX, saveClientPlayerMoveY, saveClientDirection);
         //photonView.RPC("UpdateLagCompensationValuesRpc", RpcTarget.All, pv.ViewID, saveClientPlayerMoveX, saveClientPlayerMoveY, saveClientPlayerVelocityY);
     }
 
 
-    private void ClientAnimate()
+    /*private void ClientAnimate()
     {
         if (isAttacking)
         {
@@ -426,27 +416,27 @@ public class PlayerController : MonoBehaviourPun
         if (animState == AnimState.Walk)
         {
             animator.Play("Walk");
-            audioListener.GetComponent<AudioManager>().Play("Fast Walk");
+            audioSource.GetComponent<AudioManager>().Play("Fast Walk");
         }
         else if (animState == AnimState.ReverseWalk)
         {
             animator.Play("ReverseWalk");
-            audioListener.GetComponent<AudioManager>().Play("Slow Walk");
+            audioSource.GetComponent<AudioManager>().Play("Slow Walk");
         }
         else if (animState == AnimState.SneakWalk)
         {
             animator.Play("SneakWalk");
-            audioListener.GetComponent<AudioManager>().Play("Sneak Walk");
+            audioSource.GetComponent<AudioManager>().Play("Sneak Walk");
         }
         else if (animState == AnimState.Idle)
         {
             animator.Play("Idle");
-            audioListener.GetComponent<AudioManager>().Pause();
+            audioSource.GetComponent<AudioManager>().Pause();
         }
         else if (animState == AnimState.SneakIdle)
         {
             animator.Play("SneakIdle");
-            audioListener.GetComponent<AudioManager>().Pause();
+            audioSource.GetComponent<AudioManager>().Pause();
         }
         else if (animState == AnimState.Attack)
         {
@@ -460,42 +450,54 @@ public class PlayerController : MonoBehaviourPun
         {
             animator.Play("ReverseRoll");
         }
-    }
-
-   /* [PunRPC]
-    public void UpdateClientPositionAndDirectionServerRpc(float saveClientPlayerMoveX, float saveClientPlayerMoveY, int saveClientDirection)
-    {
-        transform.position = new Vector3(transform.position.x + saveClientPlayerMoveX * Time.deltaTime,
-           transform.position.y + saveClientPlayerMoveY * Time.deltaTime,
-           transform.position.z);
-
-        model.transform.localScale = new Vector3(saveClientDirection, transform.localScale.y, transform.localScale.z);
-    }
-
-    [PunRPC]
-    public void UpdateClientVelocityServerRpc(float saveClientPlayerVelocityY)
-    {
-        transform.GetComponent<Rigidbody2D>().velocity = Vector2.up * saveClientPlayerVelocityY;
     }*/
-    /*
-        [PunRPC]
+
+    /* [PunRPC]
+     public void UpdateClientPositionAndDirectionServerRpc(float saveClientPlayerMoveX, float saveClientPlayerMoveY, int saveClientDirection)
+     {
+         transform.position = new Vector3(transform.position.x + saveClientPlayerMoveX * Time.deltaTime,
+            transform.position.y + saveClientPlayerMoveY * Time.deltaTime,
+            transform.position.z);
+
+         model.transform.localScale = new Vector3(saveClientDirection, transform.localScale.y, transform.localScale.z);
+     }
+
+     [PunRPC]
+     public void UpdateClientVelocityServerRpc(float saveClientPlayerVelocityY)
+     {
+         transform.GetComponent<Rigidbody2D>().velocity = Vector2.up * saveClientPlayerVelocityY;
+     }*/
+
+    /*    [PunRPC]
         public void UpdateClientAnimStateServerRpc(AnimState state)
         {
             networkPlayerAnimState.Value = state;
         }*/
 
+    /* [PunRPC]
+     public void UpdateLagCompensationValuesRpc(int Id, float saveClientPlayerMoveX, float saveClientPlayerMoveY, float saveClientPlayerVelocityY)
+     {
+         PhotonView view = PhotonView.Find(Id);
+         PhotonTransformViewClassic ptfv = view.gameObject.GetComponent<PhotonTransformViewClassic>();
+         ptfv.m_PositionModel.InterpolateMoveTowardsSpeed = Mathf.Pow(Mathf.Pow(saveClientPlayerMoveX, 2f) + Mathf.Pow(saveClientPlayerMoveY, 2f), 1f);
+     }*/
+
     [PunRPC]
-    public void UpdateLagCompensationValuesRpc(int Id, float saveClientPlayerMoveX, float saveClientPlayerMoveY, float saveClientPlayerVelocityY)
+    public void RotateHeadRpc(float angle)
     {
-        PhotonView view = PhotonView.Find(Id);
-        PhotonTransformViewClassic ptfv = view.gameObject.GetComponent<PhotonTransformViewClassic>();
-        ptfv.m_PositionModel.InterpolateMoveTowardsSpeed = Mathf.Pow(Mathf.Pow(saveClientPlayerMoveX, 2f) + Mathf.Pow(saveClientPlayerMoveY, 2f), 1f);
+        head.transform.localRotation = Quaternion.Euler(new Vector3(0, 0, -angle));
     }
 
     [PunRPC]
-    public void SwitchOnOffFlashlightRpc(bool state)
+    public void ToggleFlashlightRpc(bool state)
     {
         flashlight.SetActive(!state);
+    }
+
+    [PunRPC]
+    public void EquipWeaponRpc(bool state)
+    {
+        weapon.SetActive(!state);
     }
 
 }

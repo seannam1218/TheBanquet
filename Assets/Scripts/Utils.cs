@@ -32,10 +32,10 @@ public static class Utils
     {
         foreach (SpriteRenderer child in gameObject.transform.GetComponentsInChildren<SpriteRenderer>())
         {
-            if (child.transform.name != gameObject.name) child.color = c;
-            foreach (SpriteRenderer grandChild in child.transform.GetComponentsInChildren<SpriteRenderer>())
+            if (child.transform.name != gameObject.name)
             {
-                if (grandChild.transform.name != gameObject.name) grandChild.color = c;
+                if (child.transform.parent.transform.name == "Weapon") continue;
+                child.color = c;
             }
         }
     }

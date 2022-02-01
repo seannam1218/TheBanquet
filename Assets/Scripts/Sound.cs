@@ -11,6 +11,8 @@ public class Sound
     public float volume;
     [Range(0.1f, 3f)]
     public float pitch;
+    [Range(0.1f, 100f)]
+    public float maxDistance;
 
     [HideInInspector]
     public AudioSource source;

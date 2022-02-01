@@ -8,6 +8,7 @@ public class TopSensor : MonoBehaviour
 
     void Start()
     {
+        gameObject.layer = 6;
         playerController = transform.parent.GetComponent<PlayerController>();
     }
 

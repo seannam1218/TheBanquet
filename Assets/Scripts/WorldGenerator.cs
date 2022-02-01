@@ -110,6 +110,7 @@ public class WorldGenerator : MonoBehaviourPun
             GameObject spawnedDummy = PhotonNetwork.InstantiateRoomObject(dummy.name, new Vector3(x, y, 0), Quaternion.identity);
             PhotonView spawnedDummyPv = spawnedDummy.GetComponent<PhotonView>();
             photonView.RPC("SendGameObjectColorRpc", RpcTarget.All, spawnedDummyPv.ViewID, randR, randG, randB);
+            photonView.RPC("SendGameObjectDirectionRpc", RpcTarget.All, spawnedDummyPv.ViewID, randomDirection);
         }
     }
 
@@ -119,5 +120,12 @@ public class WorldGenerator : MonoBehaviourPun
         PhotonView view = PhotonView.Find(Id);
         Color color = new Color(r, g, b, 1f);
         Utils.SetChildrenColor(view.gameObject, color);
+    }
+
+    [PunRPC]
+    private void SendGameObjectDirectionRpc(int Id, int direction)
+    {
+        PhotonView view = PhotonView.Find(Id);
+        view.gameObject.transform.localScale = new Vector3(direction, 1, 1);
     }
 }

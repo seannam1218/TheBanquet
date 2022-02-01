@@ -8,6 +8,7 @@ public class LeftSensor : MonoBehaviour
 
     void Start()
     {
+        gameObject.layer = 6;
         playerController = transform.parent.GetComponent<PlayerController>();
     }
 
