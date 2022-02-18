@@ -26,12 +26,15 @@ public class CameraController : MonoBehaviour
 	}
 	void Update()
 	{
+		float mousePosX = Mathf.Clamp(mousePos.x / Screen.width - 0.5f, -0.45f, 0.45f);
+		float mousePosY = Mathf.Clamp(mousePos.y / Screen.height - 0.5f, -0.45f, 0.45f);
 		mousePos = new Vector3(Input.mousePosition.x, Input.mousePosition.y, -10);
-		distMouseTarget = (float)Math.Sqrt(Math.Pow(mousePos.x / Screen.width - 0.5f, 2) + Math.Pow(mousePos.y / Screen.height - 0.5f, 2));
+		distMouseTarget = (float)Math.Sqrt(Math.Pow(mousePosX, 2) + Math.Pow(mousePosY, 2));
+		distMouseTarget = Mathf.Clamp(distMouseTarget, 0.1f, 0.4f);
 
 		Vector3 targetPos = new Vector3(
-			target.position.x + (mousePos.x / Screen.width - 0.5f) * pullFactor * 100 * Time.deltaTime,
-			target.position.y + yOffset + (mousePos.y / Screen.height - 0.5f) * pullFactor * 100 * Time.deltaTime / 1.8f,
+			target.position.x + mousePosX * pullFactor * 100 * Time.deltaTime,
+			target.position.y + yOffset + mousePosY * pullFactor * 100 * Time.deltaTime / 1.8f,
 			defaultCameraZ * 100 * Time.deltaTime / 2 + (defaultCameraZ * distMouseTarget));
 
 		targetViewSize = defaultCameraViewSize + (float)Math.Pow(distMouseTarget, 2) * zoomFactor * 100 * Time.deltaTime;

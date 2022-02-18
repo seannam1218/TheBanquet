@@ -21,8 +21,6 @@ public class PlayerController : MonoBehaviourPun
 
     [SerializeField] GameObject camera;
     [SerializeField] GameObject groundCheck;
-    [SerializeField] GameObject leftCheck;
-    [SerializeField] GameObject rightCheck;
     [SerializeField] GameObject topCheck;
     [SerializeField] GameObject model;
     [SerializeField] GameObject head;
@@ -32,6 +30,7 @@ public class PlayerController : MonoBehaviourPun
     [SerializeField] GameObject proximityLight;
     [SerializeField] GameObject flashlight;
     [SerializeField] GameObject audioSource;
+    [SerializeField] GameObject canvas;
     
     FieldOfView fovScript;
     private Animator animator;
@@ -48,8 +47,6 @@ public class PlayerController : MonoBehaviourPun
     public AnimState animState;
     private float jumpTimeCounter;
     public bool isGrounded = false;
-    public bool isBlockedOnLeft = false;
-    public bool isBlockedOnRight = false;
     public bool isBlockedOnTop = false;
     private bool isJumping = false;
     private bool isAttacking = false;
@@ -67,10 +64,13 @@ public class PlayerController : MonoBehaviourPun
 
     void Start()
     {
+        
         photonView = GetComponent<PhotonView>();
         animator = model.transform.GetComponent<Animator>();
 
         if (!photonView.IsMine) { return; }
+
+        SetLayerAllChildren(gameObject.transform, LayerMask.NameToLayer("MyPlayer")); //change layer to myplayer
 
         Cursor.lockState = CursorLockMode.Confined;
         rigidBody = GetComponent<Rigidbody2D>();
@@ -79,17 +79,26 @@ public class PlayerController : MonoBehaviourPun
         camera.SetActive(true);
         weapon.SetActive(false);
         groundCheck.SetActive(true);
-        leftCheck.SetActive(true);
-        rightCheck.SetActive(true);
         topCheck.SetActive(true);
+        canvas.SetActive(true);
 
         fov.SetActive(true);
         proximityLight.SetActive(true);
     }
 
+    void SetLayerAllChildren(Transform root, int layer)
+    {
+        root.gameObject.layer = layer;
+        var children = root.GetComponentsInChildren<Transform>(includeInactive: true);
+        foreach (var child in children)
+        {
+            child.gameObject.layer = layer;
+        }
+    }
+
+
     private void Update() 
     {
-
         if (!photonView.IsMine) return;
         
         mousePos = new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0);
@@ -102,10 +111,17 @@ public class PlayerController : MonoBehaviourPun
 
         // Movement logic
         ClientInput();
-        ClientMove();
-        //ClientAnimate();
 
     }
+
+    private void FixedUpdate()
+    {
+        if (!photonView.IsMine) return;
+
+        ClientMove();
+        //ClientAnimate();
+    }
+
 
     private void LateUpdate()
     {
@@ -170,7 +186,7 @@ public class PlayerController : MonoBehaviourPun
         InputJump();
 
         // If in the middle of an uninterruptable animation, don't receive any inputs from the player.
-        if (CheckAnimationUninterruptible())
+        /*if (CheckAnimationUninterruptible())
         {
             SetActionStatusVariables();
             return;
@@ -179,7 +195,7 @@ public class PlayerController : MonoBehaviourPun
         {
             isAttacking = false;
             isRolling = false;
-        }
+        }*/
 
         // Flashlight
         if (Input.GetKeyDown(KeyCode.Mouse1))
@@ -195,13 +211,13 @@ public class PlayerController : MonoBehaviourPun
         }
 
         // Dropping from one way platforms
-        if (isGrounded && gameObject.layer != 7)
+        if (isGrounded && gameObject.layer != LayerMask.NameToLayer("MyPlayer"))
         {
-            gameObject.layer = 7;
+            gameObject.layer = LayerMask.NameToLayer("MyPlayer");
         }
         if (Input.GetKey(KeyCode.S))
         {
-            gameObject.layer = 6;
+            gameObject.layer = LayerMask.NameToLayer("PlayerPassing");
             isGrounded = false;
         }
 
@@ -222,7 +238,7 @@ public class PlayerController : MonoBehaviourPun
     }
 
 
-    private bool CheckAnimationUninterruptible()
+/*    private bool CheckAnimationUninterruptible()
     {
         if (animator.GetCurrentAnimatorStateInfo(0).IsName("Attack") ||
             animator.GetCurrentAnimatorStateInfo(0).IsName("Roll") ||
@@ -231,9 +247,9 @@ public class PlayerController : MonoBehaviourPun
             return true;
         }
         return false;
-    }
+    }*/
 
-    private void SetActionStatusVariables()
+ /*   private void SetActionStatusVariables()
     {
         isAttacking = false;
         isRolling = false;
@@ -248,7 +264,7 @@ public class PlayerController : MonoBehaviourPun
             return;
         }
         return;
-    }
+    }*/
 
     private void InputJump()
     {
@@ -290,13 +306,13 @@ public class PlayerController : MonoBehaviourPun
         int playerMovingDir = 0;
 
         // Movement towards right
-        if (Input.GetKey(KeyCode.D) && !isBlockedOnRight)
+        if (Input.GetKey(KeyCode.D))
         {
             playerMovingDir = 1;
             HandleMoveAndMoveSound(playerMovingDir, saveClientDirection);
         }
         // Movement towards left
-        else if (Input.GetKey(KeyCode.A) && !isBlockedOnLeft)
+        else if (Input.GetKey(KeyCode.A))
         {
             playerMovingDir = -1;
             HandleMoveAndMoveSound(playerMovingDir, saveClientDirection);
@@ -396,7 +412,7 @@ public class PlayerController : MonoBehaviourPun
     }
 
 
-    /*private void ClientAnimate()
+    private void ClientAnimate()
     {
         if (isAttacking)
         {
@@ -416,27 +432,22 @@ public class PlayerController : MonoBehaviourPun
         if (animState == AnimState.Walk)
         {
             animator.Play("Walk");
-            audioSource.GetComponent<AudioManager>().Play("Fast Walk");
         }
         else if (animState == AnimState.ReverseWalk)
         {
             animator.Play("ReverseWalk");
-            audioSource.GetComponent<AudioManager>().Play("Slow Walk");
         }
         else if (animState == AnimState.SneakWalk)
         {
             animator.Play("SneakWalk");
-            audioSource.GetComponent<AudioManager>().Play("Sneak Walk");
         }
         else if (animState == AnimState.Idle)
         {
             animator.Play("Idle");
-            audioSource.GetComponent<AudioManager>().Pause();
         }
         else if (animState == AnimState.SneakIdle)
         {
             animator.Play("SneakIdle");
-            audioSource.GetComponent<AudioManager>().Pause();
         }
         else if (animState == AnimState.Attack)
         {
@@ -450,7 +461,7 @@ public class PlayerController : MonoBehaviourPun
         {
             animator.Play("ReverseRoll");
         }
-    }*/
+    }
 
     /* [PunRPC]
      public void UpdateClientPositionAndDirectionServerRpc(float saveClientPlayerMoveX, float saveClientPlayerMoveY, int saveClientDirection)

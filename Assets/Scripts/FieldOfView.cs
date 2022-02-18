@@ -34,7 +34,7 @@ public class FieldOfView : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
         Vector3 mousePos = new Vector3(Input.mousePosition.x, Input.mousePosition.y, 0);
         float distMouseTarget = (float)Math.Sqrt(Math.Pow(mousePos.x / Screen.width - 0.5f, 2) + Math.Pow(mousePos.y / Screen.height - 0.5f, 2));

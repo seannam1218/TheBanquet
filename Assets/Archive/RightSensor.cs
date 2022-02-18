@@ -8,17 +8,17 @@ public class RightSensor : MonoBehaviour
 
     void Start()
     {
-        gameObject.layer = 6;
+        gameObject.layer = LayerMask.NameToLayer("WallCheck");
         playerController = transform.parent.GetComponent<PlayerController>();
     }
 
     void OnTriggerStay2D(Collider2D other)
     {
-        playerController.isBlockedOnRight = true;
+        //playerController.isBlockedOnRight = true;
     }
 
     void OnTriggerExit2D(Collider2D other)
     {
-        playerController.isBlockedOnRight = false;
+        //playerController.isBlockedOnRight = false;
     }
 }

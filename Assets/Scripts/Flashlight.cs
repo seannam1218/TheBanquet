@@ -34,7 +34,7 @@ public class Flashlight : MonoBehaviourPun
         innerAngle = 10f;
         outerRadius = 12f;
         innerRadius = 6f;
-        intensity = 1.8f;
+        intensity = 1.5f;
 
         savedOuterAngle = outerAngle;
         savedInnerAngle = innerAngle;

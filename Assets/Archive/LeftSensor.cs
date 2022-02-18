@@ -8,17 +8,17 @@ public class LeftSensor : MonoBehaviour
 
     void Start()
     {
-        gameObject.layer = 6;
+        gameObject.layer = LayerMask.NameToLayer("WallCheck");
         playerController = transform.parent.GetComponent<PlayerController>();
     }
 
     void OnTriggerStay2D(Collider2D other)
     {
-        playerController.isBlockedOnLeft = true;
+        //playerController.isBlockedOnLeft = true;
     }
 
     void OnTriggerExit2D(Collider2D other)
     {
-        playerController.isBlockedOnLeft = false;
+        //playerController.isBlockedOnLeft = false;
     }
 }

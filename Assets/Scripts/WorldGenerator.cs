@@ -10,18 +10,22 @@ public class WorldGenerator : MonoBehaviourPun
 
     [SerializeField] public GameObject dummy;
     [SerializeField] public GameObject colorPotion;
+    [SerializeField] public GameObject chicken;
     [SerializeField] public GameObject[] boundingBoxes;
 
     [Header("[Settings]")]
     public int numDummies;
     public float maxTimeToPotionSpawn;
     public float potionSpawnChance;
+    public float maxTimeToFoodSpawn;
+    public float foodSpawnChance;
 
     private float[] leftBoundaries;
     private float[] rightBoundaries;
     private float[] upperBoundaries;
     private float[] lowerBoundaries;
     private float timeToPotionSpawn;
+    private float timeToFoodSpawn;
     private float padding = 2f;
 
     // Start is called before the first frame update
@@ -68,7 +72,7 @@ public class WorldGenerator : MonoBehaviourPun
                 // Choose which room
                 int boxIndex = Random.Range(0, boundingBoxes.Length);
 
-                // Spawn dummy within bounding box
+                // Spawn within bounding box
                 float x = Random.Range(leftBoundaries[boxIndex], rightBoundaries[boxIndex]);
                 float y = Random.Range(upperBoundaries[boxIndex], lowerBoundaries[boxIndex]);
 
@@ -82,6 +86,23 @@ public class WorldGenerator : MonoBehaviourPun
                 photonView.RPC("SendGameObjectColorRpc", RpcTarget.All, spawnedPotionPv.ViewID, randR, randG, randB);
             }
             timeToPotionSpawn = maxTimeToPotionSpawn;
+        }
+
+        timeToFoodSpawn -= Time.deltaTime;
+        if (timeToFoodSpawn <= 0)
+        {
+            if (Random.Range(0f, 1f) < foodSpawnChance)
+            {
+                // Choose which room
+                int boxIndex = Random.Range(0, boundingBoxes.Length);
+
+                // Spawn within bounding box
+                float x = Random.Range(leftBoundaries[boxIndex], rightBoundaries[boxIndex]);
+                float y = Random.Range(upperBoundaries[boxIndex], lowerBoundaries[boxIndex]);
+
+                GameObject spawnedFood = PhotonNetwork.InstantiateRoomObject(chicken.name, new Vector3(x, y, 0), Quaternion.identity);
+            }
+            timeToFoodSpawn = maxTimeToFoodSpawn;
         }
     }
 

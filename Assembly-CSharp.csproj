@@ -56,6 +56,7 @@
     <Compile Include="Assets\Photon\PhotonLibs\WebSocket\SocketWebTcp.cs" />
     <Compile Include="Assets\Scripts\AudioManager.cs" />
     <Compile Include="Assets\Scripts\NetworkScripts\PlayerItem.cs" />
+    <Compile Include="Assets\Scripts\PlayerStatus.cs" />
     <Compile Include="Assets\Scripts\WorldGenerator.cs" />
     <Compile Include="Assets\Scripts\NetworkScripts\ConnectToServer.cs" />
     <Compile Include="Assets\Scripts\PlayerController.cs" />
@@ -65,22 +66,24 @@
     <Compile Include="Assets\Scripts\NetworkScripts\LobbyManager.cs" />
     <Compile Include="Assets\Scripts\TopSensor.cs" />
     <Compile Include="Assets\Photon\PhotonLibs\WebSocket\WebSocket.cs" />
+    <Compile Include="Assets\Scripts\LaserBullet.cs" />
     <Compile Include="Assets\Scripts\Sound.cs" />
     <Compile Include="Assets\Scripts\Dummy.cs" />
     <Compile Include="Assets\Scripts\Pistol.cs" />
     <Compile Include="Assets\Scripts\GroundSensor.cs" />
     <Compile Include="Assets\Scripts\Utils.cs" />
-    <Compile Include="Assets\Scripts\RightSensor.cs" />
+    <Compile Include="Assets\Archive\RightSensor.cs" />
     <Compile Include="Assets\Scripts\Flashlight.cs" />
     <Compile Include="Assets\Scripts\Archive\Character.cs" />
-    <Compile Include="Assets\Scripts\LeftSensor.cs" />
+    <Compile Include="Assets\Archive\LeftSensor.cs" />
+    <Compile Include="Assets\Scripts\Chicken.cs" />
     <Compile Include="Assets\Scripts\Potion.cs" />
     <Compile Include="Assets\Scripts\FieldOfView.cs" />
-    <Compile Include="Assets\Scripts\LaserBullet.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Photon\PhotonLibs\netstandard2.0\Photon3Unity3D.xml" />
     <None Include="Assets\Photon\PhotonUnityNetworking\changelog.txt" />
+    <None Include="Assets\URP\ShinyObject.shader" />
     <None Include="Assets\Photon\PhotonLibs\WebSocket\websocket-sharp.dll" />
     <None Include="Assets\URP\StencilMask.shader" />
     <None Include="Assets\Photon\PhotonLibs\changes-library.txt" />
@@ -88,6 +91,7 @@
     <None Include="Assets\URP\StencilObjectRegular.shader" />
     <None Include="Assets\Photon\PhotonLibs\netstandard2.0\Photon3Unity3D.dll" />
     <None Include="Assets\Photon\PhotonLibs\Photon3Unity3D.dll" />
+    <None Include="Assets\URP\StencilObjectURPLit.shader" />
     <None Include="Assets\Photon\PhotonLibs\Metro\Photon3Unity3D.dll" />
     <None Include="Assets\URP\StencilObject.shader" />
     <None Include="Assets\Photon\PhotonLibs\Photon3Unity3D.xml" />

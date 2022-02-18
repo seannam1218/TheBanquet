@@ -4,11 +4,11 @@ using UnityEngine;
 
 public class TopSensor : MonoBehaviour
 {
-    public PlayerController playerController;
+    private PlayerController playerController;
 
     void Start()
     {
-        gameObject.layer = 6;
+        gameObject.layer = LayerMask.NameToLayer("WallCheck");
         playerController = transform.parent.GetComponent<PlayerController>();
     }
 

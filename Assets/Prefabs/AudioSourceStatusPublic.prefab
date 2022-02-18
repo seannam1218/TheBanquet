@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &6493440161950477264
+--- !u!1 &1330770889913293371
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,23 +8,23 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 3393353951560110149}
-  - component: {fileID: 8083676599784073393}
-  - component: {fileID: 600348046300608661}
+  - component: {fileID: 7457135310259806638}
+  - component: {fileID: 4054490322143680858}
+  - component: {fileID: 4629226668030855550}
   m_Layer: 7
-  m_Name: AudioSourcePublic
+  m_Name: AudioSourceStatusPublic
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &3393353951560110149
+--- !u!4 &7457135310259806638
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6493440161950477264}
+  m_GameObject: {fileID: 1330770889913293371}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: -0.78, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -32,13 +32,13 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8083676599784073393
+--- !u!114 &4054490322143680858
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6493440161950477264}
+  m_GameObject: {fileID: 1330770889913293371}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f73f621c1d70359448a283fb57d81c5e, type: 3}
@@ -46,31 +46,37 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentlyPlayingSound: 
   sounds:
-  - name: Fast Walk
-    clip: {fileID: 8300000, guid: 4d4ab0060c99c9943a48f05a98e55621, type: 3}
-    volume: 0.6
+  - name: Stomach Growl 1
+    clip: {fileID: 8300000, guid: 9ef486396cac50447b8374b0e2ab2265, type: 3}
+    volume: 0.603
     pitch: 1
-    maxDistance: 35
-    source: {fileID: 0}
-  - name: Slow Walk
-    clip: {fileID: 8300000, guid: e12c97f25980c114f85967fd4caf3174, type: 3}
-    volume: 0.4
-    pitch: 1
-    maxDistance: 25
-    source: {fileID: 0}
-  - name: Sneak Walk
-    clip: {fileID: 8300000, guid: ad96af74f66dcf348889ea2c8d34fbbc, type: 3}
-    volume: 0.4
-    pitch: 1.44
     maxDistance: 18
     source: {fileID: 0}
---- !u!114 &600348046300608661
+  - name: Stomach Growl 2
+    clip: {fileID: 8300000, guid: a0d0ed7b87c961f48be95c813ff04dd0, type: 3}
+    volume: 0.603
+    pitch: 1
+    maxDistance: 18
+    source: {fileID: 0}
+  - name: Stomach Growl 3
+    clip: {fileID: 8300000, guid: 447a5e839178f76439b139141e4b9a65, type: 3}
+    volume: 0.603
+    pitch: 1
+    maxDistance: 18
+    source: {fileID: 0}
+  - name: Stomach Growl 4
+    clip: {fileID: 8300000, guid: 0d99e91e3df2a524bb08b19eb8e53301, type: 3}
+    volume: 0.603
+    pitch: 1
+    maxDistance: 18
+    source: {fileID: 0}
+--- !u!114 &4629226668030855550
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6493440161950477264}
+  m_GameObject: {fileID: 1330770889913293371}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: aa584fbee541324448dd18d8409c7a41, type: 3}

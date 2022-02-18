@@ -42,6 +42,26 @@ public class AudioManager : MonoBehaviourPun
         }
     }
 
+    public float GetVolume(string name)
+    {
+        return soundsDict[name].volume;
+    }
+
+    public void SetVolume(string name, float volume)
+    {
+        soundsDict[name].source.volume = volume;
+    }
+
+    public float GetMaxDistance(string name)
+    {
+        return soundsDict[name].maxDistance;
+    }
+
+    public void SetMaxDistance(string name, float distance)
+    {
+        soundsDict[name].source.maxDistance = distance;
+    }
+
     [PunRPC]
     public void LoadAudioRpc()
     {
