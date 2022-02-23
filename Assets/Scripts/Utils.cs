@@ -11,8 +11,6 @@ public static class Utils
 
     public static float GetAimAngle(Vector3 originPos, Vector3 mouseWorldPos, bool turningEnabled)
     {
-        Vector2 originPos2 = originPos;
-        Vector2 mouseWorldPos2 = mouseWorldPos;
         Vector2 hypotenuse = mouseWorldPos - originPos;
 
         float newAngle = Mathf.Atan(hypotenuse.y / hypotenuse.x) * Mathf.Rad2Deg;

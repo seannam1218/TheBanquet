@@ -61,6 +61,10 @@ MonoBehaviour:
   - RotateHeadRpc
   - ChangeHealthRpc
   - ChangeHungerRpc
+  - ToggleLightRpc
+  - TurnOff
+  - ToggleLightStandRpc
+  - InteractRpc
   DisableAutoOpenWizard: 1
   ShowSettings: 0
   DevRegionSetOnce: 1

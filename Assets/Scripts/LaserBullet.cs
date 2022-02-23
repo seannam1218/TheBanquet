@@ -47,7 +47,7 @@ public class LaserBullet : MonoBehaviourPun
 
         lt = light.GetComponent<Light2D>();
         lt.pointLightOuterRadius = 15f;
-        lt.intensity = 2.4f;
+        lt.intensity = 1f;
 
         particle.SetActive(true);
         particle.GetComponent<ParticleSystem>().Play();
@@ -62,9 +62,8 @@ public class LaserBullet : MonoBehaviourPun
     {
         for (int i = 0; i < 15; i++)
         {
-            float maxIntensity = lt.intensity;
             yield return new WaitForSeconds(0.02f);
-            lt.intensity -= maxIntensity/15;
+            lt.intensity -= lt.intensity / 15;
         }
         
         PhotonNetwork.Destroy(this.gameObject);
@@ -79,7 +78,6 @@ public class LaserBullet : MonoBehaviourPun
     {
         if (!photonView.IsMine) return;
 
-        Debug.Log(collision.gameObject.name);
         if (collision.gameObject.layer != 3)
         {
             this.GetComponent<PhotonView>().RPC("DestroyObject", RpcTarget.AllBuffered);

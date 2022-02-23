@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
 
@@ -61,6 +59,7 @@ public class PlayerController : MonoBehaviourPun
     private float gravity = 30f;
     private float headDisplacementY = 0f;
 
+    private GameObject interactableObject;
 
     void Start()
     {
@@ -108,6 +107,7 @@ public class PlayerController : MonoBehaviourPun
         {
             Cursor.lockState = CursorLockMode.None;
         }
+
 
         // Movement logic
         ClientInput();
@@ -163,6 +163,8 @@ public class PlayerController : MonoBehaviourPun
 
         // flashlight
         flashlight.transform.position = referencePos;
+
+
     }
 
     private void ClientInput()
@@ -198,7 +200,7 @@ public class PlayerController : MonoBehaviourPun
         }*/
 
         // Flashlight
-        if (Input.GetKeyDown(KeyCode.Mouse1))
+        if (Input.GetKeyDown(KeyCode.F))
         {
             photonView.RPC("ToggleFlashlightRpc", RpcTarget.All, flashlight.activeSelf);
         }
@@ -210,16 +212,7 @@ public class PlayerController : MonoBehaviourPun
             animator.SetBool("Sneak", isSneaking);
         }
 
-        // Dropping from one way platforms
-        if (isGrounded && gameObject.layer != LayerMask.NameToLayer("MyPlayer"))
-        {
-            gameObject.layer = LayerMask.NameToLayer("MyPlayer");
-        }
-        if (Input.GetKey(KeyCode.S))
-        {
-            gameObject.layer = LayerMask.NameToLayer("PlayerPassing");
-            isGrounded = false;
-        }
+
 
 
         // Movement
@@ -235,36 +228,76 @@ public class PlayerController : MonoBehaviourPun
         // Roll and attack
         //InputRollAndAttack(playerMovingForward);
 
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            if (interactableObject)
+            { 
+                int viewId = interactableObject.GetComponent<PhotonView>().ViewID;
+                photonView.RPC("InteractRpc", RpcTarget.All, viewId);
+            }
+        }
     }
 
-
-/*    private bool CheckAnimationUninterruptible()
+    private void OnTriggerStay2D(Collider2D collision)
     {
-        if (animator.GetCurrentAnimatorStateInfo(0).IsName("Attack") ||
-            animator.GetCurrentAnimatorStateInfo(0).IsName("Roll") ||
-            animator.GetCurrentAnimatorStateInfo(0).IsName("ReverseRoll"))
+        if (!photonView.IsMine) return;
+        if (collision.gameObject.CompareTag("Interactable"))
         {
-            return true;
+            interactableObject = collision.gameObject;
         }
-        return false;
-    }*/
+    }
 
- /*   private void SetActionStatusVariables()
+    private void OnTriggerExit2D(Collider2D collision)
     {
-        isAttacking = false;
-        isRolling = false;
-        if (animator.GetCurrentAnimatorStateInfo(0).IsName("Attack"))
+        if (collision.gameObject.CompareTag("Interactable"))
         {
-            isAttacking = true;
+            interactableObject = null;
+        }
+    }
+
+    /*private void DropFromOneWayPlatform()
+    {
+        if (Input.GetKey(KeyCode.S))
+        {
+            gameObject.layer = LayerMask.NameToLayer("PlayerPassing");
+            isGrounded = false;
             return;
         }
-        else if (animator.GetCurrentAnimatorStateInfo(0).IsName("Roll") || animator.GetCurrentAnimatorStateInfo(0).IsName("ReverseRoll"))
+        // Dropping from one way platforms
+        else
         {
-            isRolling = true;
-            return;
+            gameObject.layer = LayerMask.NameToLayer("MyPlayer");
         }
-        return;
-    }*/
+    }
+*/
+
+    /*    private bool CheckAnimationUninterruptible()
+        {
+            if (animator.GetCurrentAnimatorStateInfo(0).IsName("Attack") ||
+                animator.GetCurrentAnimatorStateInfo(0).IsName("Roll") ||
+                animator.GetCurrentAnimatorStateInfo(0).IsName("ReverseRoll"))
+            {
+                return true;
+            }
+            return false;
+        }*/
+
+    /*   private void SetActionStatusVariables()
+       {
+           isAttacking = false;
+           isRolling = false;
+           if (animator.GetCurrentAnimatorStateInfo(0).IsName("Attack"))
+           {
+               isAttacking = true;
+               return;
+           }
+           else if (animator.GetCurrentAnimatorStateInfo(0).IsName("Roll") || animator.GetCurrentAnimatorStateInfo(0).IsName("ReverseRoll"))
+           {
+               isRolling = true;
+               return;
+           }
+           return;
+       }*/
 
     private void InputJump()
     {
@@ -509,6 +542,14 @@ public class PlayerController : MonoBehaviourPun
     public void EquipWeaponRpc(bool state)
     {
         weapon.SetActive(!state);
+    }
+
+    [PunRPC]
+    public void InteractRpc(int Id)
+    {
+        PhotonView view = PhotonView.Find(Id);
+        GameObject obj = view.gameObject;
+        view.gameObject.GetComponent<LightStand>().Interact();
     }
 
 }

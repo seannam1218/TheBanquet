@@ -382,8 +382,8 @@ CapsuleCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0, y: -0.2519529}
-  m_Size: {x: 0.8, y: 1.2960942}
+  m_Offset: {x: 0, y: -0.22}
+  m_Size: {x: 0.76, y: 1.2960942}
   m_Direction: 0
 --- !u!50 &6946291988343724713
 Rigidbody2D:
@@ -571,7 +571,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d264727fcc49b7a47b13416667781d34, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerController: {fileID: 0}
 --- !u!61 &4722344841022720967
 BoxCollider2D:
   m_ObjectHideFlags: 0

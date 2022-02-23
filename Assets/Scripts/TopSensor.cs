@@ -6,7 +6,7 @@ public class TopSensor : MonoBehaviour
 {
     private PlayerController playerController;
 
-    void Start()
+    void Awake()
     {
         gameObject.layer = LayerMask.NameToLayer("WallCheck");
         playerController = transform.parent.GetComponent<PlayerController>();
@@ -14,11 +14,13 @@ public class TopSensor : MonoBehaviour
 
     void OnTriggerStay2D(Collider2D other)
     {
+        if (other.gameObject.CompareTag("Interactable")) return;
         playerController.isBlockedOnTop = true;
     }
 
     void OnTriggerExit2D(Collider2D other)
     {
+        if (other.gameObject.CompareTag("Interactable")) return;
         playerController.isBlockedOnTop = false;
     }
 }

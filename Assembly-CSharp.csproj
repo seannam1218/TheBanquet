@@ -79,6 +79,7 @@
     <Compile Include="Assets\Scripts\Chicken.cs" />
     <Compile Include="Assets\Scripts\Potion.cs" />
     <Compile Include="Assets\Scripts\FieldOfView.cs" />
+    <Compile Include="Assets\LightStand.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Photon\PhotonLibs\netstandard2.0\Photon3Unity3D.xml" />

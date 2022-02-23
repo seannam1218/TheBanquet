@@ -11,7 +11,6 @@ public class CameraController : MonoBehaviour
 	public float pullFactor;
 	public float zoomFactor;
 	private Vector3 mousePos;
-	private Vector3 curCamPos;
 	private float distMouseTarget;
 	private float defaultCameraZ = -10;
 	private float targetViewSize;
