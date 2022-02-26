@@ -7,6 +7,7 @@ public class LightStand : MonoBehaviour
 {
     public GameObject innerLightObject;
     public GameObject outerLightObject;
+    public GameObject audioSource;
     Light2D innerLight;
     Light2D outerLight;
     float innerLightIntensity;
@@ -26,6 +27,7 @@ public class LightStand : MonoBehaviour
 
     public void Interact()
     {
+        audioSource.GetComponent<AudioManager>().Play("Switch");
         OnOff = -(OnOff - 1);
         innerLight.intensity = OnOff * innerLightIntensity;
         outerLight.intensity = OnOff * outerLightIntensity;

@@ -465,10 +465,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_LightType: 3
-  m_BlendStyleIndex: 0
+  m_BlendStyleIndex: 1
   m_FalloffIntensity: 0.803
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 1
+  m_Intensity: 0.7
   m_LightVolumeOpacity: 0
   m_ApplyToSortingLayers: b145047a6f16dc36712d2f8c91752d323742644b
   m_LightCookieSprite: {fileID: 0}
@@ -1412,9 +1412,9 @@ MonoBehaviour:
   hungerBar: {fileID: 5931279188481190133}
   maxHealth: 100
   maxHunger: 100
-  decrementHunger: 2
-  maxTimeToGrowl: 6
-  growlChance: 0.4
+  decrementHunger: 1
+  maxTimeToGrowl: 8
+  growlChance: 0.3
   audioSource: {fileID: 8608263287625607833}
 --- !u!114 &3195739843146239530
 MonoBehaviour:
@@ -1807,7 +1807,7 @@ MonoBehaviour:
   m_BlendStyleIndex: 0
   m_FalloffIntensity: 0.394
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 1.8
+  m_Intensity: 1.5
   m_LightVolumeOpacity: 0
   m_ApplyToSortingLayers: b145047a6f16dc36712d2f8c91752d323742644b
   m_LightCookieSprite: {fileID: 0}

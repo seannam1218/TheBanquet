@@ -14,7 +14,7 @@ public class AudioManager : MonoBehaviourPun
     void Awake()
     {
         if (!photonView.IsMine) return;
-        photonView.RPC("LoadAudioRpc", RpcTarget.All);        
+        photonView.RPC("LoadAudioRpc", RpcTarget.All);
     }
 
     public void Play(string name)
@@ -39,6 +39,15 @@ public class AudioManager : MonoBehaviourPun
         if (curSound != null)
         {
             photonView.RPC("PauseAudioRpc", RpcTarget.All, currentlyPlayingSound);
+        }
+    }
+
+    public void ListSounds()
+    {
+        Debug.Log("Listing sounds...");
+        foreach (var tuple in soundsDict)
+        {
+            Debug.Log(tuple.Key + ": " + tuple.Value);
         }
     }
 

@@ -11,10 +11,13 @@ public class WorldGenerator : MonoBehaviourPun
     [SerializeField] public GameObject dummy;
     [SerializeField] public GameObject colorPotion;
     [SerializeField] public GameObject chicken;
+    [SerializeField] public GameObject sentinel;
+
     [SerializeField] public GameObject[] boundingBoxes;
 
     [Header("[Settings]")]
     public int numDummies;
+    public int numSentinels;
     public float maxTimeToPotionSpawn;
     public float potionSpawnChance;
     public float maxTimeToFoodSpawn;
@@ -50,6 +53,7 @@ public class WorldGenerator : MonoBehaviourPun
         }
 
         SpawnDummies(numDummies);
+        SpawnSentinels(numSentinels);
     }
 
     private void SpawnPlayer()
@@ -134,6 +138,23 @@ public class WorldGenerator : MonoBehaviourPun
             photonView.RPC("SendGameObjectDirectionRpc", RpcTarget.All, spawnedDummyPv.ViewID, randomDirection);
         }
     }
+
+    void SpawnSentinels(int num)
+    {
+        for (int i = 0; i < num; i++)
+        {
+            // Choose which room
+            int boxIndex = Random.Range(0, boundingBoxes.Length);
+
+            // Spawn dummy within bounding box
+            float x = Random.Range(leftBoundaries[boxIndex], rightBoundaries[boxIndex]);
+            float y = Random.Range(upperBoundaries[boxIndex], lowerBoundaries[boxIndex]);
+
+            GameObject spawnedSentinel = PhotonNetwork.InstantiateRoomObject(sentinel.name, new Vector3(x, y, 0), Quaternion.identity);
+            //spawnedSentinel.transform.GetComponent<>()
+        }
+    }
+
 
     [PunRPC]
     private void SendGameObjectColorRpc(int Id, float r, float g, float b)

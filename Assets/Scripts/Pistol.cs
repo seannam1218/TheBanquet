@@ -20,6 +20,7 @@ public class Pistol : MonoBehaviourPun
         if (cooldown <= 0 && Input.GetKeyDown(KeyCode.Mouse0))
         {
             GameObject bullet = PhotonNetwork.Instantiate("LaserBullet", transform.position, transform.parent.transform.rotation);
+            bullet.GetComponent<LaserBullet>().source = transform.parent.transform.parent.transform.parent.transform.parent.gameObject;
             PhotonView bulletPv = bullet.GetComponent<PhotonView>();
             photonView.RPC("SendGameObjectDirectionRpc", RpcTarget.All, bulletPv.ViewID, (int) -transform.parent.transform.parent.transform.parent.transform.localScale.x);
 

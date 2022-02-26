@@ -5,6 +5,7 @@ using UnityEngine.Experimental.Rendering.Universal;
 
 public class LaserBullet : MonoBehaviourPun
 {
+    public GameObject source;
     public GameObject target;
     public GameObject audioSource;
     public GameObject particle;
@@ -82,6 +83,7 @@ public class LaserBullet : MonoBehaviourPun
         {
             this.GetComponent<PhotonView>().RPC("DestroyObject", RpcTarget.AllBuffered);
             collision.gameObject.transform.GetComponent<PlayerStatus>()?.ChangeHealth(-40f);
+            collision.gameObject.transform.GetComponent<Dummy>()?.SetThreat(source);
         }
     }
 

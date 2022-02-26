@@ -14,13 +14,13 @@ public class TopSensor : MonoBehaviour
 
     void OnTriggerStay2D(Collider2D other)
     {
-        if (other.gameObject.CompareTag("Interactable")) return;
+        if (other.gameObject.CompareTag("Interactable") || other.gameObject.CompareTag("Sentinel")) return;
         playerController.isBlockedOnTop = true;
     }
 
     void OnTriggerExit2D(Collider2D other)
     {
-        if (other.gameObject.CompareTag("Interactable")) return;
+        if (other.gameObject.CompareTag("Interactable") || other.gameObject.CompareTag("Sentinel")) return;
         playerController.isBlockedOnTop = false;
     }
 }

@@ -42,7 +42,7 @@ public class GroundSensor : MonoBehaviour
     {
         GameObject savedPlatform = platform;
         savedPlatform.SetActive(false);
-        yield return new WaitForSeconds(0.2f);
+        yield return new WaitForSeconds(0.4f);
         savedPlatform.SetActive(true);
     }
 }

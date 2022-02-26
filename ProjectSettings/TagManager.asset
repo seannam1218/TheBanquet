@@ -11,6 +11,7 @@ TagManager:
   - PassablePlatform
   - Interactable
   - Furniture
+  - Sentinel
   layers:
   - Default
   - TransparentFX
@@ -27,8 +28,8 @@ TagManager:
   - Item
   - WallCheck
   - Interactable
-  - 
-  - 
+  - AlertRadius
+  - Sentinel
   - 
   - 
   - 
